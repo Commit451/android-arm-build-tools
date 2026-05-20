@@ -1,0 +1,5 @@
+aosp/
+out/
+.ccache/
+*.log
+.DS_Store
