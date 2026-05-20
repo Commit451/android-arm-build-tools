@@ -82,17 +82,17 @@ image-windows-arm64: image-linux-arm64
 fetch: image-linux-arm64
 	docker run $(DOCKER_RUN_ARGS) \
 		$(IMG_LINUX_ARM64) \
-		bash scripts/fetch-aosp.sh
+		python3 scripts/fetch_aosp.py
 
 linux-arm64: fetch
 	docker run $(DOCKER_RUN_ARGS) \
 		$(IMG_LINUX_ARM64) \
-		bash -lc 'scripts/build-linux-arm64.sh && TARGET=linux-arm64 scripts/collect-artifacts.sh'
+		bash -c 'python3 scripts/build_linux_arm64.py && TARGET=linux-arm64 python3 scripts/collect_artifacts.py'
 
 windows-arm64: fetch image-windows-arm64
 	docker run $(DOCKER_RUN_ARGS) \
 		$(IMG_WINDOWS_ARM64) \
-		bash -lc 'scripts/build-windows-arm64.sh && TARGET=windows-arm64 scripts/collect-artifacts.sh'
+		bash -c 'python3 scripts/build_windows_arm64.py && TARGET=windows-arm64 python3 scripts/collect_artifacts.py'
 
 # ---- shells (for iteration / debugging) -------------------------------
 shell-linux-arm64: image-linux-arm64

@@ -103,7 +103,7 @@ in order — knowing what to expect helps tell "working" from "hung":
 | `Reading product config`         | Soong parses every `Android.bp`      | 2-5 min      |
 | `[N/M] <action>`                 | Ninja runs the actual compilation    | 20-80 min    |
 | `>>> collecting from …`          | Our script copies binaries to `out/` | seconds      |
-| `>>> packaged: …`                | `collect-artifacts.sh` makes tarball | seconds      |
+| `>>> packaged: …`                | `collect_artifacts.py` makes tarball | seconds      |
 
 Or skip the phase-by-phase approach and just:
 
@@ -276,7 +276,7 @@ which sets this up automatically.
 **`repo init` hangs or 403s.**
 `android.googlesource.com` rate-limits aggressively when running
 from cloud IPs. Retry, or set `MANIFEST_URL` in
-`scripts/fetch-aosp.sh` to a GitHub mirror like
+`scripts/fetch_aosp.py` to a GitHub mirror like
 `https://github.com/aosp-mirror/platform_manifest`.
 
 **`No space left on device` mid-build.**
@@ -350,10 +350,10 @@ If `make linux-arm64` exits non-zero and the error isn't actionable:
 ├── manifests/
 │   └── build-tools.xml            # local repo manifest stub
 ├── scripts/
-│   ├── fetch-aosp.sh
-│   ├── build-linux-arm64.sh
-│   ├── build-windows-arm64.sh
-│   └── collect-artifacts.sh
+│   ├── fetch_aosp.py
+│   ├── build_linux_arm64.py
+│   ├── build_windows_arm64.py
+│   └── collect_artifacts.py
 ├── patches/                       # source patches applied before build
 ├── aosp/                          # repo sync target (gitignored)
 └── out/                           # built binaries land here (gitignored)
@@ -375,3 +375,9 @@ For Windows ARM64, nothing prebuilt is published anywhere I know of.
 - Soong build system: <https://source.android.com/docs/setup/build>
 - `llvm-mingw` (Windows ARM64 toolchain): <https://github.com/mstorsjo/llvm-mingw>
 - AOSP mirror on GitHub: <https://github.com/aosp-mirror>
+
+## License
+
+android-arm-buildtools is available under the MIT license. See the LICENSE file for more info.
+
+\ ゜o゜)ノ

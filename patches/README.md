@@ -12,7 +12,7 @@ Subject: [...]
 ...
 ```
 
-`scripts/build-windows-arm64.sh` reads `# Project:` and runs
+`scripts/build_windows_arm64.py` reads `# Project:` and runs
 `git apply` inside that subdirectory.
 
 Patches are applied idempotently — re-running the build is safe.
