@@ -15,20 +15,20 @@ diff --git a/incfs/util/include/util/map_ptr.h b/incfs/util/include/util/map_ptr
              return temp;
          }
 
++        const_iterator& operator-=(int n) {
++            safe_ptr_ = safe_ptr_ + (-n);
++            return *this;
++        }
++
 +        const const_iterator& operator--() {
-+            safe_ptr_--;
++            *this -= 1;
 +            return *this;
 +        }
 +
 +        const const_iterator operator--(int) {
 +            const_iterator temp(*this);
-+            safe_ptr_--;
++            *this -= 1;
 +            return temp;
-+        }
-+
-+        const_iterator& operator-=(int n) {
-+            safe_ptr_ = safe_ptr_ + (-n);
-+            return *this;
 +        }
 +
 +        const_iterator operator-(int n) const {
