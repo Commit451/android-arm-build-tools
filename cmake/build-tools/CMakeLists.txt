@@ -1,8 +1,12 @@
-# Per-binary CMakeLists for the build-tools. MVP scope is aapt2 only;
-# the other .cmake files (aapt, aidl, zipalign, etc.) will get added
-# in subsequent iterations once aapt2 builds cleanly.
+# Per-binary CMakeLists for the build-tools. Each .cmake declares
+# an executable + its source list + transitive link deps.
 
 project(build-tools)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME})
 
 include(aapt2.cmake)
+include(aapt.cmake)
+include(aidl.cmake)
+include(zipalign.cmake)
+include(dexdump.cmake)
+include(split-select.cmake)
