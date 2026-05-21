@@ -1,11 +1,12 @@
 # Project: src/core
-# packagelistparser.cpp includes <sys/limits.h> which is a bionic-only
-# header. The glibc equivalent for the constants it uses (PATH_MAX
-# etc.) is plain <limits.h>.
+# packagelistparser.cpp uses two bionic-isms that aren't in glibc:
+# - <sys/limits.h> header (glibc equivalent is plain <limits.h>)
+# - GID_MAX constant (not defined in glibc; bionic has it as
+#   the max possible gid_t value, i.e. (gid_t)-1)
 diff --git a/libpackagelistparser/packagelistparser.cpp b/libpackagelistparser/packagelistparser.cpp
 --- a/libpackagelistparser/packagelistparser.cpp
 +++ b/libpackagelistparser/packagelistparser.cpp
-@@ -22,7 +22,7 @@
+@@ -22,12 +22,16 @@
  #include <inttypes.h>
  #include <stdio.h>
  #include <string.h>
@@ -14,3 +15,12 @@ diff --git a/libpackagelistparser/packagelistparser.cpp b/libpackagelistparser/p
 
  #include <memory>
 
+ #include <log/log.h>
+
++#ifndef GID_MAX
++#define GID_MAX ((gid_t)-1)
++#endif
++
+ static bool parse_gids(const char* path, size_t line_number, const char* gids, pkg_info* info) {
+   // Nothing to do?
+   if (!gids || !strcmp(gids, "none")) return true;
