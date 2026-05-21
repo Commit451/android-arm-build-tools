@@ -125,6 +125,12 @@ jobs:
         run: |
           make linux-arm64 AOSP_BRANCH=${{ needs.detect.outputs.tag }} JOBS=2
 
+      - name: Reclaim ownership for subsequent steps
+        # Build artifacts are owned by uid 1000 from inside the
+        # container; strip/upload run as the runner user (1001)
+        # and need write access to the directory.
+        run: sudo chown -R $(id -u):$(id -g) .
+
       - name: Strip binaries
         run: |
           for f in out/linux-arm64/aapt2 out/linux-arm64/aidl \
