@@ -1,0 +1,17 @@
+# Project: src/build
+# ZipFile.cpp uses C11's _Static_assert at file scope. That builds
+# under bionic + clang (NDK's clang accepts the C11 keyword in C++
+# mode as an extension), but our GCC 13 in -std=gnu++20 rejects it.
+# C++11 added static_assert as a proper keyword; use that.
+diff --git a/tools/zipalign/ZipFile.cpp b/tools/zipalign/ZipFile.cpp
+--- a/tools/zipalign/ZipFile.cpp
++++ b/tools/zipalign/ZipFile.cpp
+@@ -35,7 +35,7 @@
+ #include <assert.h>
+ #include <inttypes.h>
+
+-_Static_assert(sizeof(off_t) == 8, "off_t too small");
++static_assert(sizeof(off_t) == 8, "off_t too small");
+
+ namespace android {
+
