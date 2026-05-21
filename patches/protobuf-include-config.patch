@@ -1,0 +1,19 @@
+# Project: src/protobuf
+# AOSP's protobuf source has its config.h under config/, but upstream
+# protobuf's CMakeLists.txt doesn't add that dir to the include path,
+# so src/google/protobuf/stubs/common.cc fails with:
+#   fatal error: config.h: No such file or directory
+# This adds the include path. Same as lzhiyong's protobuf_CMakeLists.txt.patch.
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -298,7 +298,8 @@ endif (MSVC)
+ include_directories(
+   ${ZLIB_INCLUDE_DIRECTORIES}
+   ${protobuf_BINARY_DIR}
+-  ${protobuf_SOURCE_DIR}/src)
++  ${protobuf_SOURCE_DIR}/src
++  ${protobuf_SOURCE_DIR}/config)
+
+ if (protobuf_UNICODE)
+   add_definitions(-DUNICODE -D_UNICODE)

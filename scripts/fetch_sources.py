@@ -55,6 +55,50 @@ def clone_one(repo: dict, branch: str, src_dir: Path) -> tuple[str, bool, str]:
         return (str(dest), False, e.stderr.strip().split("\n")[-1])
 
 
+def apply_patches(src_dir: Path, patch_dir: Path) -> None:
+    """Apply patches/*.patch to the cloned source trees. Each patch
+    must have a `# Project: <path>` header naming the project under
+    src/ that the patch applies to (e.g. `# Project: src/protobuf`).
+    Idempotent — re-running is safe; already-applied patches are
+    skipped via `git apply --check`.
+    """
+    if not patch_dir.is_dir():
+        return
+    patches = sorted(patch_dir.glob("*.patch"))
+    if not patches:
+        return
+    log(f"applying patches from {patch_dir}")
+    for p in patches:
+        project = None
+        for line in p.read_text().splitlines():
+            if line.startswith("# Project:"):
+                project = line[len("# Project:"):].strip()
+                break
+        if not project:
+            print(f"  !! {p.name} missing '# Project:' header, skipping")
+            continue
+        # Patch headers say `src/<repo>`; cloned trees live directly
+        # under src_dir (which is /workspace/src by default).
+        if project.startswith("src/"):
+            project = project[len("src/"):]
+        proj_dir = src_dir / project
+        if not proj_dir.is_dir():
+            print(f"  !! {p.name}: project dir not found: {proj_dir}")
+            continue
+        check = subprocess.run(
+            ["git", "apply", "--check", "-p1", str(p)],
+            cwd=proj_dir,
+            capture_output=True,
+        )
+        if check.returncode == 0:
+            subprocess.run(
+                ["git", "apply", "-p1", str(p)], cwd=proj_dir, check=True
+            )
+            print(f"  applied {p.name} -> {project}")
+        else:
+            print(f"  skipped {p.name} (already applied or N/A for {project})")
+
+
 def main() -> int:
     branch = os.environ.get("AOSP_BRANCH")
     if not branch:
@@ -62,6 +106,7 @@ def main() -> int:
 
     src_dir = Path(os.environ.get("SRC_DIR", "/workspace/src"))
     repos_json = Path(os.environ.get("REPOS_JSON", "/workspace/repos.json"))
+    patch_dir = Path(os.environ.get("PATCH_DIR", "/workspace/patches"))
     jobs = int(os.environ.get("JOBS") or min(os.cpu_count() or 4, 4))
 
     with repos_json.open() as f:
@@ -85,6 +130,8 @@ def main() -> int:
         for dest, msg in failures:
             print(f"  {dest}: {msg}")
         return 1
+
+    apply_patches(src_dir, patch_dir)
 
     size = subprocess.check_output(
         ["du", "-sh", str(src_dir)], text=True
