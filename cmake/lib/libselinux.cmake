@@ -15,8 +15,13 @@
 #
 
 add_library(libselinux STATIC
-    ${SRC}/selinux/libselinux/src/android/android.c
-    ${SRC}/selinux/libselinux/src/android/android_seapp.c
+    # The android/*.c files use bionic system_properties.h and are
+    # irrelevant for host SELinux access (which aapt2 doesn't actually
+    # exercise). Drop the Android-specific shims; if a link surfaces a
+    # missing symbol we'll stub it.
+    #   ${SRC}/selinux/libselinux/src/android/android.c
+    #   ${SRC}/selinux/libselinux/src/android/android_seapp.c
+    #   ${SRC}/selinux/libselinux/src/android/android_device.c
     ${SRC}/selinux/libselinux/src/avc.c
     ${SRC}/selinux/libselinux/src/avc_internal.c
     ${SRC}/selinux/libselinux/src/avc_sidtab.c
@@ -60,7 +65,6 @@ add_library(libselinux STATIC
     ${SRC}/selinux/libselinux/src/setrans_client.c
     ${SRC}/selinux/libselinux/src/sha1.c
     ${SRC}/selinux/libselinux/src/stringrep.c
-    ${SRC}/selinux/libselinux/src/android/android_device.c
     )
 
 target_compile_definitions(libselinux PRIVATE
