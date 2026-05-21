@@ -61,6 +61,12 @@ endif()
 set(INCLUDES
     ${SRC}/base/tools/aapt2
     ${SRC}/protobuf/src
+    # protobuf 25.x (Android 16) headers include <absl/base/attributes.h>
+    # and friends. Our build pulls abseil in via add_subdirectory, but
+    # the absl_* INTERFACE includes aren't propagated to libaapt2 since
+    # we don't go through target_link_libraries for the protobuf-generated
+    # headers — add abseil's source dir to the include path directly.
+    ${SRC}/abseil-cpp
     ${SRC}/logging/liblog/include
     ${SRC}/expat/lib
     ${SRC}/fmtlib/include
