@@ -1,0 +1,27 @@
+# Project: src/base
+# ResourceTable.cpp passes std::tie(rhs.name, rhs.id) — a tuple of
+# references — to a function taking `const std::pair<string_view,
+# optional<U>>&`. libstdc++ 13+ accepts the implicit tuple-to-pair
+# conversion, libstdc++ 12 doesn't. Explicitly construct the pair so
+# it works on both.
+diff --git a/tools/aapt2/ResourceTable.cpp b/tools/aapt2/ResourceTable.cpp
+--- a/tools/aapt2/ResourceTable.cpp
++++ b/tools/aapt2/ResourceTable.cpp
+@@ -437,7 +437,7 @@ struct SortedVectorInserter : public Comparer {
+ struct PackageViewComparer {
+   bool operator()(const ResourceTablePackageView& lhs, const ResourceTablePackageView& rhs) {
+     return less_than_struct_with_name_and_id<ResourceTablePackageView, uint8_t>(
+-        lhs, std::tie(rhs.name, rhs.id));
++        lhs, std::pair<std::string_view, std::optional<uint8_t>>{rhs.name, rhs.id});
+   }
+ };
+
+@@ -450,7 +450,7 @@ struct TypeViewComparer {
+ struct EntryViewComparer {
+   bool operator()(const ResourceTableEntryView& lhs, const ResourceTableEntryView& rhs) {
+     return less_than_struct_with_name_and_id<ResourceTableEntryView, uint16_t>(
+-        lhs, std::tie(rhs.name, rhs.id));
++        lhs, std::pair<std::string_view, std::optional<uint16_t>>{rhs.name, rhs.id});
+   }
+ };
+
