@@ -1,0 +1,47 @@
+# Project: src/incremental_delivery
+# incfs::map_ptr<T>::const_iterator declares
+# iterator_category = std::random_access_iterator_tag but only
+# implements operator++ and operator+=. Newer libstdc++ enforces
+# the full random-access iterator concept (--, -=, comparisons,
+# subscript) when std::lower_bound is instantiated against this
+# iterator from libandroidfw/LoadedArsc.cpp.
+#
+# Add the missing operators. The underlying safe_ptr_ is itself
+# a map_ptr<T>, which already supports all of these.
+diff --git a/incfs/util/include/util/map_ptr.h b/incfs/util/include/util/map_ptr.h
+--- a/incfs/util/include/util/map_ptr.h
++++ b/incfs/util/include/util/map_ptr.h
+@@ -191,6 +191,33 @@ public:
+             return temp;
+         }
+
++        const const_iterator& operator--() {
++            safe_ptr_--;
++            return *this;
++        }
++
++        const const_iterator operator--(int) {
++            const_iterator temp(*this);
++            safe_ptr_--;
++            return temp;
++        }
++
++        const_iterator& operator-=(int n) {
++            safe_ptr_ = safe_ptr_ + (-n);
++            return *this;
++        }
++
++        const_iterator operator-(int n) const {
++            const_iterator other = *this;
++            other -= n;
++            return other;
++        }
++
++        bool operator<(const const_iterator& o) const { return (*this - o) < 0; }
++        bool operator<=(const const_iterator& o) const { return (*this - o) <= 0; }
++        bool operator>(const const_iterator& o) const { return (*this - o) > 0; }
++        bool operator>=(const const_iterator& o) const { return (*this - o) >= 0; }
++
+     private:
+         explicit const_iterator(const map_ptr<T>& ptr) : safe_ptr_(ptr) {}
+         map_ptr<T> safe_ptr_;
