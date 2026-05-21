@@ -13,6 +13,11 @@
 // API level, so make every such guard succeed unconditionally.
 #define __builtin_available(...) (true)
 
+// Force-included into every TU regardless of language — including the
+// .S files in src/libpng/arm/. The assembler can't parse C headers
+// or function bodies, so everything below must be skipped for it.
+#ifndef __ASSEMBLER__
+
 // strlcpy/strlcat are BSD functions bionic has always had; AOSP's
 // liblog and friends call them as if they're always available. glibc
 // only added them in 2.38, so on older glibc (Debian 12 / Pi OS
@@ -133,5 +138,7 @@ using std::atomic_fetch_xor_explicit;
 using std::atomic_thread_fence;
 using std::atomic_signal_fence;
 #endif // __cplusplus
+
+#endif // !__ASSEMBLER__
 
 #endif // !__clang__
