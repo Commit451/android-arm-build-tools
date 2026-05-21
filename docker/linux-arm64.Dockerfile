@@ -38,6 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         sudo \
         unzip \
         zip \
+        zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Non-root user so workspace bind-mounts stay manageable. Same UID/GID

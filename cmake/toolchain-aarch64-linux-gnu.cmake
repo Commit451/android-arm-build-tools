@@ -33,15 +33,21 @@ if(NOT DEFINED CMAKE_STRIP)
     set(CMAKE_STRIP aarch64-linux-gnu-strip)
 endif()
 
-# Look for libraries / headers in the cross sysroot under
-# /usr/aarch64-linux-gnu/, not in the host's /usr/.
-set(CMAKE_FIND_ROOT_PATH /usr/aarch64-linux-gnu)
+# Library/include search paths.
+#
+# - On x86_64 hosts with the cross-toolchain installed, aarch64 libs
+#   and headers live under /usr/aarch64-linux-gnu/.
+# - On arm64 hosts (where this build is effectively native), the
+#   same libs live under /usr/ via the multiarch /usr/lib/aarch64-linux-gnu/
+#   layout.
+# Cover both with FIND_ROOT_PATH; BOTH mode lets CMake fall back to
+# normal search if the rooted paths come up empty.
+set(CMAKE_FIND_ROOT_PATH
+    /usr/aarch64-linux-gnu
+    /usr/lib/aarch64-linux-gnu
+    /
+)
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-
-# pkg-config: don't use host's .pc files when cross-compiling.
-set(ENV{PKG_CONFIG_DIR} "")
-set(ENV{PKG_CONFIG_LIBDIR} "/usr/aarch64-linux-gnu/lib/pkgconfig:/usr/aarch64-linux-gnu/share/pkgconfig")
-set(ENV{PKG_CONFIG_SYSROOT_DIR} "/")
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
