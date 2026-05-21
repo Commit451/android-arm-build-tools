@@ -5,7 +5,7 @@
 diff --git a/libprocessgroup/util/util.cpp b/libprocessgroup/util/util.cpp
 --- a/libprocessgroup/util/util.cpp
 +++ b/libprocessgroup/util/util.cpp
-@@ -225,7 +225,7 @@ bool ReadDescriptors(CgroupDescriptorMap* descriptors) {
+@@ -225,6 +225,6 @@ bool ReadDescriptors(CgroupDescriptorMap* descriptors) {
          }
  
          if (const auto it = v1Mounts->find(controller->path()); it != v1Mounts->end()) {
