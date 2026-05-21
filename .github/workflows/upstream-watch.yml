@@ -105,6 +105,12 @@ jobs:
           restore-keys: |
             aarbt-
 
+      - name: Chown workspace to match container's builder uid
+        # The container runs as uid 1000 (`builder`). The runner's
+        # workspace is owned by the `runner` user (uid 1001). Without
+        # this, the container can't create /workspace/src.
+        run: sudo chown -R 1000:1000 .
+
       - name: Build linux-arm64 tools
         # 2-core runner. Setting JOBS=2 keeps cmake/ninja from
         # over-parallelizing into the runner's 8 GB RAM (protobuf
