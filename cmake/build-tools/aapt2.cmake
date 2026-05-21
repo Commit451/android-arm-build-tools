@@ -213,6 +213,8 @@ target_link_libraries(aapt2
     ssl
     pcre2-8
     png_static
-    c++_static
+    # c++_static -- NDK's static libc++; on glibc we let g++ link
+    # libstdc++ automatically, so this would be -lc++_static
+    # which doesn't exist on Ubuntu.
     dl
     )
