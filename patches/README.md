@@ -12,13 +12,12 @@ Subject: [...]
 ...
 ```
 
-`scripts/build_windows_arm64.py` reads `# Project:` and runs
-`git apply` inside that subdirectory.
+`scripts/fetch_sources.py` reads `# Project:` and runs `git apply -p1`
+inside that subdirectory after cloning, before the build runs.
 
-Patches are applied idempotently — re-running the build is safe.
+Patches are applied idempotently — re-running is safe; already-applied
+ones are skipped via `git apply --check`.
 
-Most patches here exist because AOSP's host build system assumes
-`x86_64-w64-mingw32` for Windows targets and needs nudging to use
-`aarch64-w64-mingw32` from llvm-mingw. As AOSP gains upstream
-Windows-on-ARM support, patches in this directory should shrink
-or disappear.
+Most patches here exist because AOSP source assumes bionic + Clang +
+the NDK toolchain. Each patch addresses one place where that
+assumption breaks under GCC + glibc.

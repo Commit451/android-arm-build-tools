@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Package the built binaries into a tarball/zip per target, with a
-MANIFEST.txt so it's clear what's inside and which AOSP rev produced it.
+"""Package the built binaries into a .tar.xz, with a MANIFEST.txt
+so it's clear what's inside and which AOSP rev produced it.
 
 Reads from the environment:
-  TARGET             required, e.g. linux-arm64 or windows-arm64
+  TARGET             required, e.g. linux-arm64
   AOSP_BRANCH        required, recorded in the manifest
   BUILD_TOOLS_LABEL  optional, defaults to "unknown"
   OUT_DIR            optional, defaults to /workspace/out/$TARGET
@@ -25,7 +25,7 @@ def log(msg: str) -> None:
 def main() -> int:
     target = os.environ.get("TARGET")
     if not target:
-        sys.exit("error: TARGET must be set (e.g. linux-arm64 or windows-arm64)")
+        sys.exit("error: TARGET must be set (e.g. linux-arm64)")
     branch = os.environ.get("AOSP_BRANCH")
     if not branch:
         sys.exit("error: AOSP_BRANCH must be set")
@@ -49,27 +49,18 @@ def main() -> int:
     )
     (out_dir / "MANIFEST.txt").write_text(manifest)
 
-    if target.startswith("windows-"):
-        archive = dist_dir / f"{base}.zip"
-        archive.unlink(missing_ok=True)
-        subprocess.run(
-            ["zip", "-r", str(archive), ".", "-x", "*.tar.*", "*.zip"],
-            cwd=out_dir,
-            check=True,
-        )
-    else:
-        archive = dist_dir / f"{base}.tar.xz"
-        archive.unlink(missing_ok=True)
-        subprocess.run(
-            [
-                "tar", "-cJf", str(archive),
-                "--exclude=*.tar.*",
-                "--exclude=*.zip",
-                ".",
-            ],
-            cwd=out_dir,
-            check=True,
-        )
+    archive = dist_dir / f"{base}.tar.xz"
+    archive.unlink(missing_ok=True)
+    subprocess.run(
+        [
+            "tar", "-cJf", str(archive),
+            "--exclude=*.tar.*",
+            "--exclude=*.zip",
+            ".",
+        ],
+        cwd=out_dir,
+        check=True,
+    )
 
     size = subprocess.check_output(
         ["du", "-h", str(archive)], text=True

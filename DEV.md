@@ -1,9 +1,9 @@
 # DEV.md — building android-arm-buildtools from source
 
-For people who want to rebuild the binaries themselves, hack on the
-pipeline, retarget it (windows-arm64, more tools), or debug a CI
-failure when AOSP moves upstream and a patch goes stale. End users
-just need [`README.md`](README.md).
+For people who want to rebuild the binaries themselves, hack on
+the pipeline, add more tools, or debug a CI failure when AOSP
+moves upstream and a patch goes stale. End users just need
+[`README.md`](README.md).
 
 ## Why this project exists
 
@@ -162,24 +162,6 @@ subtree of AOSP. If you want them anyway:
 3. Build and iterate on whatever breaks — see the existing
    `patches/` for the pattern.
 
-## Adding a new target platform
-
-`windows-arm64` is the obvious next one. The shape is the same
-CMake-with-cross-toolchain story, but with
-`aarch64-w64-mingw32-clang` from `llvm-mingw` instead of
-`gcc-aarch64-linux-gnu`. Skeleton:
-
-1. New Dockerfile (`docker/windows-arm64.Dockerfile`) layering
-   llvm-mingw onto the linux-arm64 image.
-2. New toolchain file (`cmake/toolchain-aarch64-w64-mingw32.cmake`).
-3. New build script (`scripts/build_windows_arm64.py`).
-4. Iterate. Expect a fresh round of "POSIX vs Win32" patches in
-   addition to the bionic-vs-glibc set.
-
-The existing `docker/windows-arm64.Dockerfile` and
-`scripts/build_windows_arm64.py` are stale Soong-era leftovers
-and need rewriting.
-
 ## Project layout
 
 ```
@@ -194,15 +176,13 @@ and need rewriting.
 ├── config.env                         # version pins, knobs
 │
 ├── docker/
-│   ├── linux-arm64.Dockerfile         # ubuntu:24.04 + cross-toolchain
-│   └── windows-arm64.Dockerfile       # STALE — Soong-era leftover
+│   └── linux-arm64.Dockerfile         # ubuntu:24.04 + cross-toolchain
 │
 ├── repos.json                         # AOSP source repos to clone
 │
 ├── scripts/
 │   ├── fetch_sources.py               # clone repos.json + apply patches
 │   ├── build_linux_arm64.py           # cmake/ninja driver
-│   ├── build_windows_arm64.py         # STALE
 │   ├── collect_artifacts.py           # tar artifacts into out/dist
 │   └── check_upstream.py              # CI: detect new AOSP tags
 │
@@ -260,5 +240,3 @@ Refresh the patch context lines locally, push, re-dispatch.
 - AOSP mirror on GitHub: <https://github.com/aosp-mirror>
 - lzhiyong/android-sdk-tools (the bionic-targeted predecessor):
   <https://github.com/lzhiyong/android-sdk-tools>
-- llvm-mingw (for the eventual windows-arm64 pivot):
-  <https://github.com/mstorsjo/llvm-mingw>
