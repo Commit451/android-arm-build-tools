@@ -27,6 +27,14 @@
 #define _Null_unspecified
 #endif
 
+// __INTRODUCED_IN(N) is a bionic macro tagging when an API was added
+// to Android's libc. AOSP headers like libprocessgroup/cgrouprc.h use
+// it directly on function declarations. On glibc the macro is
+// undefined; make it a no-op so the declarations parse.
+#ifndef __INTRODUCED_IN
+#define __INTRODUCED_IN(api_level)
+#endif
+
 // Force-included into every TU regardless of language — including the
 // .S files in src/libpng/arm/. The assembler can't parse C headers
 // or function bodies, so everything below must be skipped for it.
