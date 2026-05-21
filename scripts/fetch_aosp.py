@@ -62,7 +62,12 @@ def main() -> int:
     local_manifests.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(local_manifest_src, local_manifests / "build-tools.xml")
 
-    log(f"repo sync -j{jobs}")
+    # android.googlesource.com aggressively rate-limits cloud IPs (we
+    # saw HTTP 429 / RESOURCE_EXHAUSTED with -j8 from Hetzner DE).
+    # Throttle the network side hard while still letting checkout
+    # parallelize across CPU cores.
+    network_jobs = min(int(os.environ.get("SYNC_NETWORK_JOBS", "2")), int(jobs))
+    log(f"repo sync (network j{network_jobs}, checkout j{jobs}, retries 5)")
     subprocess.run(
         [
             "repo", "sync",
@@ -71,7 +76,9 @@ def main() -> int:
             "--optimized-fetch",
             "--prune",
             "--force-sync",
-            f"-j{jobs}",
+            "--retry-fetches=5",
+            f"--jobs-network={network_jobs}",
+            f"--jobs-checkout={jobs}",
         ],
         cwd=aosp_dir,
         check=True,
