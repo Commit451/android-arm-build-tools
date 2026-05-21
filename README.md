@@ -14,16 +14,57 @@ Google ships `darwin-arm64` binaries in build-tools 34.0.0+, so
 Apple Silicon Macs are already covered upstream and are not a
 target here.
 
-## Status
+## Status — read this first
 
 | Target          | Status                                                                |
 | --------------- | --------------------------------------------------------------------- |
-| `linux-arm64`   | Primary path. Built on AOSP's native `aarch64` Linux host config.     |
-| `windows-arm64` | Experimental. Requires patching Soong's mingw config; expect to iterate. |
+| `linux-arm64`   | **Not currently functional.** Needs a refactor to cross-build from x86_64 — see below. |
+| `windows-arm64` | Experimental, untested. Same refactor will apply.                     |
 
-If this is your first time running the project, start with
-`linux-arm64` and confirm that path works end-to-end before
-attempting `windows-arm64`.
+Earlier versions of this README claimed `linux-arm64` was the
+"primary path" built natively in an ARM64 container. A cloud-side
+test on 2026-05-20 against AOSP `android-15.0.0_r1` proved this
+wrong: AOSP's `prebuilts/` directory contains only `linux-x86`
+variants of the toolchain Soong needs to bootstrap itself (Go,
+clang, build-tools). There is no `prebuilts/go/linux-arm64/`. Soong
+fails immediately on an ARM64 host with:
+
+```
+prebuilts/go/linux-x86/bin/go: cannot execute binary file:
+Exec format error
+```
+
+### Path forward
+
+The fix is to **cross-build from an x86_64 host** instead of
+building natively on an arm64 host. Soong supports this via
+`HOST_CROSS_OS=linux HOST_CROSS_ARCH=arm64` (the same mechanism
+the windows-arm64 path uses for that target). Outputs land in
+`out/host/linux_glibc-arm64/bin/` and run on arm64 Linux.
+
+Concretely, the Dockerfile would change from `arm64v8/ubuntu:22.04`
+to `ubuntu:22.04` (x86_64), the build container itself runs
+natively on any x86_64 host or under Apple Silicon's Rosetta, and
+the Makefile passes the cross-host flags to `m`. None of this is
+in place yet — the current `linux-arm64.Dockerfile` and
+`build_linux_arm64.py` assume the now-disproven native-arm64
+approach.
+
+### Other test findings worth knowing
+
+- **Disk: ~125 GB on disk for AOSP source alone**, not the 15-30 GB
+  this README originally claimed. That was the size of the shallow
+  git history; the working tree (actual source files) is much
+  bigger. Plan on ~200 GB free for source + Soong out/.
+- **`android.googlesource.com` rate-limits cloud IPs aggressively.**
+  `repo sync -j8` from a Hetzner cloud server trips HTTP 429 within
+  minutes. `scripts/fetch_aosp.py` is now throttled to
+  `--jobs-network=2 --retry-fetches=5`.
+- The first build attempt from scratch surfaced unrelated bugs in
+  the project (Makefile `SHELL` syntax, ARM-incompatible apt
+  packages, root-vs-builder bind-mount permissions) — these are
+  fixed in the commit history but unrelated to the larger
+  cross-build refactor.
 
 ## How it works (one paragraph)
 
@@ -40,8 +81,9 @@ the native build.
 
 - **Docker** with `buildx` (Docker Desktop 4.x+, or Docker Engine
   20.10+ with the buildx plugin).
-- **Disk: ~80 GB free.** Approximate breakdown:
-  - AOSP source (partial-clone, shallow): ~15-30 GB in `aosp/`
+- **Disk: ~200 GB free.** Approximate breakdown (revised after a
+  real run — original estimate was wrong by 4-5×):
+  - AOSP source working tree: ~125-150 GB in `aosp/`
   - Soong build intermediates: ~30-50 GB in `aosp/out/`
   - ccache (persisted across runs): up to ~5 GB in `.ccache/`
   - Built artifacts: a few hundred MB in `out/`
