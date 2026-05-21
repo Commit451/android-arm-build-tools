@@ -1,0 +1,23 @@
+# Project: src/base
+# CombinedIterator's RefPair is a proxy reference; libstdc++ 12's
+# std::sort (used by AssetManager2.cpp) ends up calling
+# std::swap on rvalue references returned by `*it`, but the existing
+# friend swap only takes lvalues — so the rvalue swap fails to bind.
+# GCC 13+ libstdc++ is more lenient (uses ranges::iter_swap), so the
+# upstream build doesn't notice. Add the rvalue overload so GCC 12
+# builds too.
+diff --git a/libs/androidfw/include/androidfw/CombinedIterator.h b/libs/androidfw/include/androidfw/CombinedIterator.h
+--- a/libs/androidfw/include/androidfw/CombinedIterator.h
++++ b/libs/androidfw/include/androidfw/CombinedIterator.h
+@@ -57,6 +57,11 @@ struct RefPair : BaseRefPair<It1, It2> {
+     swap(l.first, r.first);
+     swap(l.second, r.second);
+   }
++  friend void swap(RefPair&& l, RefPair&& r) {
++    using std::swap;
++    swap(l.first, r.first);
++    swap(l.second, r.second);
++  }
+ };
+
+ template <class It1, class It2>
