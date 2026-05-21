@@ -35,6 +35,9 @@ add_library(libcutils STATIC
     ${SRC}/core/libcutils/sockets.cpp
     ${SRC}/core/libcutils/str_parms.cpp
     ${SRC}/core/libcutils/strlcpy.c
+    # No-op stubs for the atrace_* API since we dropped trace-dev.cpp;
+    # libandroidfw's ScopedTrace needs these to link.
+    ${PROJECT_SOURCE_DIR}/cmake/stubs/atrace_stub.cpp
     # The following are Android-only (linux/ashmem.h, kernel uevent
     # device, qtaguid traffic-accounting, Android reboot semantics)
     # and don't compile against glibc + a stock Linux kernel header
