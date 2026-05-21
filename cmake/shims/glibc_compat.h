@@ -27,6 +27,9 @@
 #include <cstring>
 // numeric_limits<T> referenced without <limits> in libandroidfw.
 #include <limits>
+// std::unique_ptr referenced without <memory> in libincfs/path.h
+// (and likely more AOSP shared headers).
+#include <memory>
 // Typedefs.
 using std::atomic_int;
 using std::atomic_uint;
