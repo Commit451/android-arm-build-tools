@@ -13,6 +13,42 @@
 // API level, so make every such guard succeed unconditionally.
 #define __builtin_available(...) (true)
 
+// strlcpy/strlcat are BSD functions bionic has always had; AOSP's
+// liblog and friends call them as if they're always available. glibc
+// only added them in 2.38, so on older glibc (Debian 12 / Pi OS
+// Bookworm = 2.36, Ubuntu 22.04 = 2.35) we provide a fallback.
+#include <features.h>
+#if defined(__GLIBC__) && (__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 38))
+#include <stddef.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+static inline size_t strlcpy(char *dst, const char *src, size_t dsize) {
+    size_t srclen = 0;
+    while (src[srclen]) ++srclen;
+    if (dsize) {
+        size_t n = (srclen < dsize - 1) ? srclen : dsize - 1;
+        for (size_t i = 0; i < n; ++i) dst[i] = src[i];
+        dst[n] = '\0';
+    }
+    return srclen;
+}
+static inline size_t strlcat(char *dst, const char *src, size_t dsize) {
+    size_t dlen = 0;
+    while (dlen < dsize && dst[dlen]) ++dlen;
+    size_t srclen = 0;
+    while (src[srclen]) ++srclen;
+    if (dlen == dsize) return dsize + srclen;
+    size_t copy = (srclen < dsize - dlen - 1) ? srclen : dsize - dlen - 1;
+    for (size_t i = 0; i < copy; ++i) dst[dlen + i] = src[i];
+    dst[dlen + copy] = '\0';
+    return dlen + srclen;
+}
+#ifdef __cplusplus
+}
+#endif
+#endif // glibc < 2.38
+
 #ifdef __cplusplus
 // AOSP source uses the bare C11 atomic typedef names (atomic_int,
 // atomic_bool, ...) in headers that get included by both C and C++
