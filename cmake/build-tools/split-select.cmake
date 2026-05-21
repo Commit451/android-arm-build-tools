@@ -46,8 +46,10 @@ target_link_libraries(split-select
     libutils
     libcutils
     libincfs
-    libbase
+    # libbase moved AFTER libziparchive — static-archive link order
+    # matters and libziparchive references libbase symbols.
     libziparchive
+    libbase
     libpackagelistparser
     libprocessgroup
     liblog
