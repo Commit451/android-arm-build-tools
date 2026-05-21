@@ -19,6 +19,13 @@ on:
 permissions:
   contents: write                  # for gh release create + git push
 
+# Opt the JavaScript-based actions (checkout, cache, etc.) into
+# Node 24 ahead of GitHub's 2026-06-02 default flip. Suppresses
+# the "Node 20 deprecated" warning without waiting for upstream
+# action versions to bump.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   detect:
     runs-on: ubuntu-latest
