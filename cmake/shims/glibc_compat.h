@@ -21,34 +21,20 @@
 // strlcpy/strlcat are BSD functions bionic has always had; AOSP's
 // liblog and friends call them as if they're always available. glibc
 // only added them in 2.38, so on older glibc (Debian 12 / Pi OS
-// Bookworm = 2.36, Ubuntu 22.04 = 2.35) we provide a fallback.
+// Bookworm = 2.36, Ubuntu 22.04 = 2.35) we provide a declaration so
+// callers compile. The body comes from libcutils' src/strlcpy.c —
+// every AOSP target in this project links libcutils, so the symbol
+// resolves at link time. (Defining the body here as static-inline
+// would collide with that source file when the shim is force-included
+// into it.)
 #include <features.h>
 #if defined(__GLIBC__) && (__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 38))
 #include <stddef.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
-static inline size_t strlcpy(char *dst, const char *src, size_t dsize) {
-    size_t srclen = 0;
-    while (src[srclen]) ++srclen;
-    if (dsize) {
-        size_t n = (srclen < dsize - 1) ? srclen : dsize - 1;
-        for (size_t i = 0; i < n; ++i) dst[i] = src[i];
-        dst[n] = '\0';
-    }
-    return srclen;
-}
-static inline size_t strlcat(char *dst, const char *src, size_t dsize) {
-    size_t dlen = 0;
-    while (dlen < dsize && dst[dlen]) ++dlen;
-    size_t srclen = 0;
-    while (src[srclen]) ++srclen;
-    if (dlen == dsize) return dsize + srclen;
-    size_t copy = (srclen < dsize - dlen - 1) ? srclen : dsize - dlen - 1;
-    for (size_t i = 0; i < copy; ++i) dst[dlen + i] = src[i];
-    dst[dlen + copy] = '\0';
-    return dlen + srclen;
-}
+extern size_t strlcpy(char *dst, const char *src, size_t dsize);
+extern size_t strlcat(char *dst, const char *src, size_t dsize);
 #ifdef __cplusplus
 }
 #endif
