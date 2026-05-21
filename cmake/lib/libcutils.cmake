@@ -35,13 +35,18 @@ add_library(libcutils STATIC
     ${SRC}/core/libcutils/sockets.cpp
     ${SRC}/core/libcutils/str_parms.cpp
     ${SRC}/core/libcutils/strlcpy.c
-    ${SRC}/core/libcutils/android_reboot.cpp
-    ${SRC}/core/libcutils/ashmem-dev.cpp
-    ${SRC}/core/libcutils/klog.cpp
-    ${SRC}/core/libcutils/partition_utils.cpp
-    ${SRC}/core/libcutils/qtaguid.cpp
-    ${SRC}/core/libcutils/trace-dev.cpp
-    ${SRC}/core/libcutils/uevent.cpp
+    # The following are Android-only (linux/ashmem.h, kernel uevent
+    # device, qtaguid traffic-accounting, Android reboot semantics)
+    # and don't compile against glibc + a stock Linux kernel header
+    # set. aapt2 doesn't reference them; if a later link surfaces a
+    # missing symbol we'll bring back specific files.
+    #   android_reboot.cpp
+    #   ashmem-dev.cpp
+    #   klog.cpp
+    #   partition_utils.cpp
+    #   qtaguid.cpp
+    #   trace-dev.cpp
+    #   uevent.cpp
     )
 
 target_compile_definitions(libcutils PRIVATE 
