@@ -1,0 +1,35 @@
+# Project: src/aidl
+# code_writer.h has two GCC-illegal C++ constructs that NDK Clang
+# silently accepts:
+#
+#   1. __attribute__((format(printf,...))) on a function-template
+#      definition inside a class. GCC: "attributes are not allowed
+#      on a function-definition."
+#   2. `template <> bool Write(const char* str)` — explicit
+#      template specialization inside the class body (not in
+#      namespace scope). GCC rejects this; it's not even valid
+#      C++ per spec but clang has historically allowed it.
+#
+# Drop the printf-format attribute (it's only a warning hint
+# anyway) and turn the explicit specialization into a plain
+# non-template overload, which behaves the same for callers but
+# is well-formed C++.
+diff --git a/code_writer.h b/code_writer.h
+--- a/code_writer.h
++++ b/code_writer.h
+@@ -44,14 +44,13 @@ class CodeWriter {
+   // Write a formatted string to this writer in the usual printf sense.
+   // Returns false on error.
+   template <typename... Args>
+-  bool Write(const char* format, Args... args) __attribute__((format(printf, 2, 0))) {
++  bool Write(const char* format, Args... args) {
+     std::string formatted;
+     android::base::StringAppendF(&formatted, format, args...);
+
+     return WriteString(formatted);
+   }
+
+-  template <>
+   bool Write(const char* str) {
+     return WriteString(str);
+   }
