@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Clone the AOSP project repos listed in repos.json at a given tag.
 
-Replaces the previous fetch_aosp.py which drove `repo init` + `repo
-sync` against the whole AOSP manifest. We only need a few dozen
-specific project repos for the CMake-based build, so cloning them
-directly is faster and uses ~3-5 GB instead of ~125 GB.
+We only need a few dozen specific project repos for the CMake-based
+build (~5 GB on disk), not the entire AOSP manifest (~125 GB).
 
 Reads from the environment:
   AOSP_BRANCH      required, a tag or branch name (e.g. platform-tools-35.0.2)
