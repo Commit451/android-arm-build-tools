@@ -18,8 +18,19 @@ target here.
 
 | Target          | Status                                                                |
 | --------------- | --------------------------------------------------------------------- |
-| `linux-arm64`   | **Working.** Verified-runnable `aapt2` produced on 2026-05-21 against AOSP `platform-tools-35.0.2`. |
+| `linux-arm64`   | **Working — 4 tools.** `aapt2`, `aidl`, `zipalign`, `split-select` produced as runnable aarch64 glibc ELFs against AOSP `platform-tools-35.0.2`. |
 | `windows-arm64` | Stale (still based on the abandoned Soong path). Needs its own pivot to the CMake approach with `aarch64-w64-mingw32`. |
+
+Default `TARGETS` (in `config.env`):
+```
+aapt2 aidl zipalign split-select
+```
+
+The four tools an actual Android app build path uses. `aapt` (legacy,
+unused by AGP 3.0+) and `dexdump` (debug-only utility) are
+out-of-scope; their CMake fragments aren't built. `aapt.cmake` is
+still included because `split-select` links the `libaapt` static
+library it declares.
 
 The original Soong-based pipeline was a dead end against stable
 AOSP — AOSP doesn't ship `prebuilts/go/linux-arm64` or
