@@ -6,9 +6,9 @@
 diff --git a/libpackagelistparser/packagelistparser.cpp b/libpackagelistparser/packagelistparser.cpp
 --- a/libpackagelistparser/packagelistparser.cpp
 +++ b/libpackagelistparser/packagelistparser.cpp
-@@ -22,12 +22,16 @@
- #include <inttypes.h>
+@@ -23,12 +23,16 @@
  #include <stdio.h>
+ #include <stdlib.h>
  #include <string.h>
 -#include <sys/limits.h>
 +#include <limits.h>

@@ -191,18 +191,30 @@ def apply_patches(src_dir: Path, patch_dir: Path) -> None:
         if not proj_dir.is_dir():
             print(f"  !! {p.name}: project dir not found: {proj_dir}")
             continue
-        check = subprocess.run(
+        fwd = subprocess.run(
             ["git", "apply", "--check", "-p1", str(p)],
-            cwd=proj_dir,
-            capture_output=True,
+            cwd=proj_dir, capture_output=True, text=True,
         )
-        if check.returncode == 0:
+        if fwd.returncode == 0:
             subprocess.run(
                 ["git", "apply", "-p1", str(p)], cwd=proj_dir, check=True
             )
             print(f"  applied {p.name} -> {project}")
+            continue
+        # Forward apply failed. Distinguish "already applied" (reverse
+        # succeeds, source already has the patched lines) from "context
+        # drifted" (neither direction applies — the patch is stale and
+        # needs a refresh, e.g. after bumping AOSP_BRANCH).
+        rev = subprocess.run(
+            ["git", "apply", "--reverse", "--check", "-p1", str(p)],
+            cwd=proj_dir, capture_output=True, text=True,
+        )
+        if rev.returncode == 0:
+            print(f"  skipped {p.name} (already applied in {project})")
         else:
-            print(f"  skipped {p.name} (already applied or N/A for {project})")
+            err = (fwd.stderr or "").strip().split("\n")[-1]
+            print(f"  !! STALE {p.name} ({project}): {err}")
+            print(f"  !! refresh the patch against the current source")
 
 
 def main() -> int:
