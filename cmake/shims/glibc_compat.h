@@ -21,6 +21,10 @@
 // and the std:: namespace. Bring the std:: names into global scope
 // so the AOSP headers parse cleanly in C++ TUs.
 #include <atomic>
+// AOSP source also routinely calls bare strlen/strncmp/memcpy
+// from C++ TUs without including <cstring>; bionic's transitive
+// includes provide the declarations, glibc's don't.
+#include <cstring>
 // Typedefs.
 using std::atomic_int;
 using std::atomic_uint;
@@ -38,6 +42,23 @@ using std::atomic_size_t;
 using std::atomic_ptrdiff_t;
 using std::atomic_intptr_t;
 using std::atomic_uintptr_t;
+// Sized atomic typedefs (also from <stdatomic.h>).
+using std::atomic_int_least8_t;
+using std::atomic_int_least16_t;
+using std::atomic_int_least32_t;
+using std::atomic_int_least64_t;
+using std::atomic_uint_least8_t;
+using std::atomic_uint_least16_t;
+using std::atomic_uint_least32_t;
+using std::atomic_uint_least64_t;
+using std::atomic_int_fast8_t;
+using std::atomic_int_fast16_t;
+using std::atomic_int_fast32_t;
+using std::atomic_int_fast64_t;
+using std::atomic_uint_fast8_t;
+using std::atomic_uint_fast16_t;
+using std::atomic_uint_fast32_t;
+using std::atomic_uint_fast64_t;
 // memory_order enum + values.
 using std::memory_order;
 using std::memory_order_relaxed;
