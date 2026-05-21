@@ -17,7 +17,7 @@ You already need the matching build-tools installed via
 from there; we only replace the four native binaries).
 
 ```sh
-sdkmanager "build-tools;35.0.2"
+sdkmanager "build-tools;35.0.1"
 ```
 
 Then run the installer:
@@ -35,11 +35,32 @@ To pin a specific version, or use a non-default SDK path:
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Commit451/android-arm-buildtools/main/install.sh -o install.sh
 chmod +x install.sh
-./install.sh --version 35.0.2 --sdk /opt/android-sdk
+./install.sh --version 35.0.1 --sdk /opt/android-sdk
 ```
 
 The script refuses to run on non-aarch64 hosts and on hosts that
 don't already have the matching `build-tools/<version>/` directory.
+
+### AGP 9.x: also point aapt2 at the arm64 binary
+
+Android Gradle Plugin 9.x stopped using the SDK's `aapt2` and
+instead pulls its own from Maven
+(`com.android.tools.build:aapt2:<agp-version>:linux`), which is
+x86_64-only. The drop-in above is still needed by other steps,
+but on AGP 9+ you also have to tell Gradle to use the arm64
+binary directly. Add this to your project's `gradle.properties`
+(or `~/.gradle/gradle.properties` to apply globally):
+
+```properties
+android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/35.0.1/aapt2
+```
+
+Use the full path to the `aapt2` that this project's installer
+just wrote. Restart the Gradle daemon (`./gradlew --stop`) after
+changing the property so it picks up the new binary.
+
+If you're on AGP 8.x or older you can skip this step — those
+versions still shell out to `$SDK/build-tools/<v>/aapt2`.
 
 ## Verify
 
@@ -53,9 +74,35 @@ After install, this should work in any AGP project without
 Or smoke-test the binary directly:
 
 ```sh
-$ANDROID_HOME/build-tools/35.0.2/aapt2 version
+$ANDROID_HOME/build-tools/35.0.1/aapt2 version
 # Android Asset Packaging Tool (aapt) 2.X-...
 ```
+
+## Compatibility
+
+Binaries are built on Debian 12 (Bookworm) — glibc 2.36, GCC 12 —
+so they need glibc 2.36+ and GLIBCXX_3.4.30+ at runtime. Distros
+that work out of the box:
+
+- Raspberry Pi OS Bookworm (glibc 2.36) ✅
+- Debian 12+ ✅
+- Ubuntu 22.04+ ✅ (glibc 2.35 — close enough; libstdc++ matches)
+- Fedora 38+ / Asahi Linux ✅
+- Anything newer than the above ✅
+
+If you're on something older, [build from source](DEV.md) against
+your distro's libc.
+
+## Why we ship 35.0.1 when sdkmanager has 37.0.0
+
+AOSP's `platform/build` source tree only tags through
+`platform-tools-35.0.2`. Versions 36.0.0, 36.1.0, and 37.0.0 are
+published through `sdkmanager` but never tagged in AOSP source —
+so there's nothing to build them from. We ship the highest version
+that's in both catalogs. (35.0.2 is AOSP-tagged but not in
+sdkmanager either; 35.0.1 is the intersection.) AGP doesn't
+require build-tools to match `compileSdk`, so 35.0.1 + `compileSdk
+36` is a fine combination.
 
 ## Releases
 

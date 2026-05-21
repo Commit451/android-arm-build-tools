@@ -116,8 +116,8 @@ Knobs in `config.env`, overridable on the make command line:
 
 | Variable            | Default                                       | Meaning                            |
 | ------------------- | --------------------------------------------- | ---------------------------------- |
-| `AOSP_BRANCH`       | `platform-tools-35.0.2`                       | git tag applied to every cloned repo |
-| `BUILD_TOOLS_LABEL` | `35.0.2`                                      | metadata for artifact filenames    |
+| `AOSP_BRANCH`       | `platform-tools-35.0.1`                       | git tag applied to every cloned repo |
+| `BUILD_TOOLS_LABEL` | `35.0.1`                                      | metadata for artifact filenames    |
 | `TARGETS`           | `aapt2 aidl zipalign split-select`            | which binaries to build            |
 | `JOBS`              | container `nproc`                             | parallel build jobs                |
 | `CCACHE_DIR`        | `./.ccache`                                   | persisted across runs              |
@@ -128,11 +128,18 @@ make linux-arm64 AOSP_BRANCH=platform-tools-35.0.1 JOBS=2
 
 ## CI / upstream tracker
 
-`.github/workflows/upstream-watch.yml` runs daily at 08:00 UTC. It
-queries `android.googlesource.com` for new `platform-tools-*`
-tags via `scripts/check_upstream.py`, and if one exists and we
-don't already have a matching GitHub Release, it builds and
-publishes one.
+`.github/workflows/upstream-watch.yml` runs daily at 08:00 UTC.
+`scripts/check_upstream.py` queries two sources — sdkmanager's
+`repository2-3.xml` for the build-tools versions Google ships, and
+AOSP's `platform/build` tags for the versions we can build from
+source — and picks the highest version present in both sets. If
+that's newer than the version we last released, it builds and
+publishes a new GitHub Release.
+
+If sdkmanager publishes a new version but AOSP hasn't tagged its
+source for it (as happened with 36.x and 37.x), `check_upstream.py`
+won't pick it. That's intentional: shipping a build of "kinda this
+version" would mislead users about what they're installing.
 
 You can manually dispatch the workflow at any time from the
 [Actions tab](https://github.com/Commit451/android-arm-buildtools/actions/workflows/upstream-watch.yml).

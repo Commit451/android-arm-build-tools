@@ -39,7 +39,7 @@ add_compile_options(-include ${PROJECT_SOURCE_DIR}/cmake/shims/glibc_compat.h)
 add_compile_definitions(_FILE_OFFSET_BITS=64)
 
 # Marker version recorded in libbuildversion (see patches/misc).
-set(TOOLS_VERSION 35.0.2)
+set(TOOLS_VERSION 35.0.1)
 
 # Where fetch_sources.py drops the cloned AOSP project repos.
 set(SRC ${PROJECT_SOURCE_DIR}/src)

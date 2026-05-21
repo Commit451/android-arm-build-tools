@@ -8,8 +8,13 @@
 #
 # This is a deliberate departure from the previous Soong-based pipeline
 # — see MIGRATION.md for the why.
+#
+# Base image is Debian 12 (Bookworm) — glibc 2.36, GCC 12.2 — chosen
+# so the resulting binaries run on Raspberry Pi OS Bookworm (also
+# glibc 2.36) and any newer distro. Ubuntu 24.04 (glibc 2.39) was too
+# new; binaries built there refused to load on Pi OS.
 
-FROM ubuntu:24.04
+FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
