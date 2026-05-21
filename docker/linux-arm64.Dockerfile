@@ -27,16 +27,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         file \
         flex \
         fontconfig \
-        g++-multilib \
-        gcc-multilib \
         git \
         git-lfs \
         gnupg \
         gperf \
         imagemagick \
-        lib32ncurses5-dev \
-        lib32readline-dev \
-        lib32z1-dev \
         libelf-dev \
         libffi-dev \
         libgl1-mesa-dev \
