@@ -1,0 +1,24 @@
+# Project: src/base
+# GCC 13.3 ICEs on a generic lambda inside a templated struct that
+# implicitly captures `this` via `[&]`:
+#
+#   internal compiler error: trying to capture 'this' in instantiation
+#   of generic lambda
+#
+# Working around the compiler bug by making the capture explicit and
+# calling through *this so the method-on-base-class resolution
+# doesn't need lambda-side `this` reasoning.
+diff --git a/tools/aapt2/ResourceTable.cpp b/tools/aapt2/ResourceTable.cpp
+--- a/tools/aapt2/ResourceTable.cpp
++++ b/tools/aapt2/ResourceTable.cpp
+@@ -311,8 +311,8 @@ template <typename T, typename Comparer>
+ struct SortedVectorInserter : public Comparer {
+   std::pair<bool, typename std::vector<T>::iterator> LowerBound(std::vector<T>& el,
+                                                                 const T& value) {
+-    auto it = std::lower_bound(el.begin(), el.end(), value, [&](auto& lhs, auto& rhs) {
+-      return Comparer::operator()(lhs, rhs);
++    auto it = std::lower_bound(el.begin(), el.end(), value, [this](auto& lhs, auto& rhs) {
++      return (*this)(lhs, rhs);
+     });
+     bool found =
+         it != el.end() && !Comparer::operator()(*it, value) && !Comparer::operator()(value, *it);
