@@ -13,8 +13,18 @@ on:
   workflow_dispatch:
     inputs:
       force_tag:
-        description: "Force a specific platform-tools-* tag (skip upstream detection)"
+        description: "GitHub release tag to publish (skip upstream detection). Default is auto-detected platform-tools-X.Y.Z."
         required: false
+      source_ref:
+        description: "AOSP git tag/branch to clone (default: same as force_tag). Use to build a newer source revision while keeping a platform-tools-* release name."
+        required: false
+      label:
+        description: "BUILD_TOOLS_LABEL for artifact naming (default: force_tag with platform-tools- prefix stripped)."
+        required: false
+      dry_run:
+        description: "Build and upload artifacts, but skip publishing a GitHub release."
+        type: boolean
+        default: false
 
 permissions:
   contents: write                  # for gh release create + git push
@@ -24,6 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.decide.outputs.tag }}
+      source_ref: ${{ steps.decide.outputs.source_ref }}
+      label: ${{ steps.decide.outputs.label }}
       should_build: ${{ steps.decide.outputs.should_build }}
     steps:
       - uses: actions/checkout@v6
@@ -52,6 +64,20 @@ jobs:
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
+          # source_ref defaults to TAG (legacy behavior). When set,
+          # lets us build from a different AOSP ref than the release
+          # is named after — e.g. android-16.0.0_r4 source published
+          # as platform-tools-36.0.0.
+          SOURCE_REF="${{ inputs.source_ref }}"
+          [ -z "$SOURCE_REF" ] && SOURCE_REF="$TAG"
+
+          # label defaults to TAG with platform-tools- stripped.
+          LABEL="${{ inputs.label }}"
+          [ -z "$LABEL" ] && LABEL="${TAG#platform-tools-}"
+
+          echo "source_ref=$SOURCE_REF" >> "$GITHUB_OUTPUT"
+          echo "label=$LABEL"           >> "$GITHUB_OUTPUT"
 
           # Check if we already published a release for this tag.
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -99,9 +125,9 @@ jobs:
             src
             .ccache
             build/host-protoc
-          # Per-tag cache: each upstream tag gets its own source
-          # tree, but ccache and host-protoc carry over.
-          key: aarbt-${{ needs.detect.outputs.tag }}-${{ runner.os }}-${{ runner.arch }}
+          # Per-source-ref cache: each upstream ref gets its own
+          # source tree, but ccache and host-protoc carry over.
+          key: aarbt-${{ needs.detect.outputs.source_ref }}-${{ runner.os }}-${{ runner.arch }}
           restore-keys: |
             aarbt-
 
@@ -116,7 +142,10 @@ jobs:
         # over-parallelizing into the runner's 8 GB RAM (protobuf
         # in particular is RAM-heavy under -O3).
         run: |
-          make linux-arm64 AOSP_BRANCH=${{ needs.detect.outputs.tag }} JOBS=2
+          make linux-arm64 \
+            AOSP_BRANCH=${{ needs.detect.outputs.source_ref }} \
+            BUILD_TOOLS_LABEL=${{ needs.detect.outputs.label }} \
+            JOBS=2
 
       - name: Reclaim ownership for subsequent steps
         # Build artifacts are owned by uid 1000 from inside the
@@ -145,7 +174,9 @@ jobs:
 
   release:
     needs: [detect, build]
-    if: needs.detect.outputs.should_build == 'true'
+    # Skip when dry_run is on — we still want the build artifact for
+    # inspection on the Actions run, just no public release.
+    if: needs.detect.outputs.should_build == 'true' && inputs.dry_run != true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
