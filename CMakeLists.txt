@@ -75,6 +75,13 @@ add_subdirectory(${SRC}/libpng EXCLUDE_FROM_ALL)
 add_subdirectory(${SRC}/expat/expat EXCLUDE_FROM_ALL)
 add_subdirectory(${SRC}/boringssl EXCLUDE_FROM_ALL)
 add_subdirectory(${SRC}/protobuf EXCLUDE_FROM_ALL)
+# Additional third-party libs needed by the non-aapt2 tools:
+#   - jsoncpp: aapt + split-select
+#   - zopfli:  zipalign
+#   - googletest: aidl links gmock
+add_subdirectory(${SRC}/jsoncpp EXCLUDE_FROM_ALL)
+add_subdirectory(${SRC}/zopfli EXCLUDE_FROM_ALL)
+add_subdirectory(${SRC}/googletest EXCLUDE_FROM_ALL)
 # protobuf's config.h is wired into its include path via
 # patches/protobuf-include-config.patch, applied at fetch time.
 
