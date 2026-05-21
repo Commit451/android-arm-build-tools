@@ -70,17 +70,8 @@ add_subdirectory(${SRC}/libpng EXCLUDE_FROM_ALL)
 add_subdirectory(${SRC}/expat/expat EXCLUDE_FROM_ALL)
 add_subdirectory(${SRC}/boringssl EXCLUDE_FROM_ALL)
 add_subdirectory(${SRC}/protobuf EXCLUDE_FROM_ALL)
-
-# AOSP's protobuf source expects a `config.h` that lives in config/
-# alongside the autotools-style layout. Upstream protobuf's
-# CMakeLists.txt doesn't pull it into the include path; add it here.
-# (lzhiyong applies the same fix as a source patch; doing it from the
-# outside keeps src/protobuf pristine.)
-foreach(_pb_target libprotobuf libprotobuf-lite libprotoc)
-    if(TARGET ${_pb_target})
-        target_include_directories(${_pb_target} PUBLIC ${SRC}/protobuf/config)
-    endif()
-endforeach()
+# protobuf's config.h is wired into its include path via
+# patches/protobuf-include-config.patch, applied at fetch time.
 
 # ---- AOSP internal libraries + tools ---------------------------------
 add_subdirectory(cmake/lib)
