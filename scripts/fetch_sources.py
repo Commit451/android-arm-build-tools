@@ -55,6 +55,65 @@ def clone_one(repo: dict, branch: str, src_dir: Path) -> tuple[str, bool, str]:
         return (str(dest), False, e.stderr.strip().split("\n")[-1])
 
 
+def install_shims(src_dir: Path, patch_dir: Path) -> None:
+    """Drop AOSP-generated source files into the cloned tree that
+    libincfs and libbuildversion expect to find there. Upstream AOSP
+    generates these at build time (sysprop_library, version stamping);
+    for our out-of-tree CMake setup we ship pre-generated copies in
+    patches/misc/ and copy them into place.
+    """
+    misc = patch_dir / "misc"
+    if not misc.is_dir():
+        return
+
+    drops: list[tuple[str, str]] = [
+        # (source filename under patches/misc, dest path under src_dir)
+        ("IncrementalProperties.sysprop.h",
+         "incremental_delivery/sysprop/include/IncrementalProperties.sysprop.h"),
+        ("IncrementalProperties.sysprop.cpp",
+         "incremental_delivery/sysprop/IncrementalProperties.sysprop.cpp"),
+        ("platform_tools_version.h",
+         "soong/cc/libbuildversion/include/platform_tools_version.h"),
+    ]
+    log("installing pre-generated source shims")
+    for filename, rel_dest in drops:
+        srcfile = misc / filename
+        dest = src_dir / rel_dest
+        if not srcfile.is_file():
+            print(f"  !! missing source: {srcfile}")
+            continue
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(srcfile, dest)
+        print(f"  installed {filename} -> {rel_dest}")
+
+
+def fix_aapt2_proto_paths(src_dir: Path) -> None:
+    """aapt2's .proto files import sibling .proto files by their
+    full AOSP path (e.g. `import "frameworks/base/tools/aapt2/Resources.proto"`).
+    Our build runs protoc with --proto_path=src/base/tools/aapt2 only,
+    so the full-path imports don't resolve. Rewrite them to bare
+    filenames. Same fix lzhiyong applies via sed.
+    """
+    aapt2_dir = src_dir / "base" / "tools" / "aapt2"
+    if not aapt2_dir.is_dir():
+        return
+    replacements = {
+        "frameworks/base/tools/aapt2/Configuration.proto": "Configuration.proto",
+        "frameworks/base/tools/aapt2/Resources.proto": "Resources.proto",
+    }
+    touched = []
+    for proto in aapt2_dir.glob("*.proto"):
+        text = proto.read_text()
+        new = text
+        for old, repl in replacements.items():
+            new = new.replace(old, repl)
+        if new != text:
+            proto.write_text(new)
+            touched.append(proto.name)
+    if touched:
+        log(f"rewrote proto import paths in: {', '.join(touched)}")
+
+
 def apply_patches(src_dir: Path, patch_dir: Path) -> None:
     """Apply patches/*.patch to the cloned source trees. Each patch
     must have a `# Project: <path>` header naming the project under
@@ -131,6 +190,8 @@ def main() -> int:
             print(f"  {dest}: {msg}")
         return 1
 
+    install_shims(src_dir, patch_dir)
+    fix_aapt2_proto_paths(src_dir)
     apply_patches(src_dir, patch_dir)
 
     size = subprocess.check_output(
