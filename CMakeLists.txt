@@ -73,6 +73,13 @@ endif()
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+# Protobuf 25.x+ exports libprotobuf/libprotoc with their abseil deps;
+# our abseil add_subdirectory uses EXCLUDE_FROM_ALL so the absl_*
+# targets aren't in any export set, and configure fails. We don't
+# install anything from this build anyway — just build binaries and
+# copy them out — so turn protobuf install off.
+set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
+set(utf8_range_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${SRC}/abseil-cpp EXCLUDE_FROM_ALL)
