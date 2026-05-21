@@ -30,10 +30,13 @@ target_include_directories(zipalign PRIVATE
     ${SRC}/libziparchive/include
     )
 
-target_link_libraries(zipalign 
-    libutils 
-    libbase
+target_link_libraries(zipalign
+    # Order matters for static archives — libziparchive references
+    # libbase symbols, so libbase has to come AFTER libziparchive.
+    # liblog last because everyone references it.
+    libutils
     libziparchive
+    libbase
     libzopfli
     liblog
     # c++_static  # NDK static libc++; g++ links libstdc++ automatically
