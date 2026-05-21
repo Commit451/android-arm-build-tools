@@ -15,6 +15,7 @@ Reads from the environment:
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
