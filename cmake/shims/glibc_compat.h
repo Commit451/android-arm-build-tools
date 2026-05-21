@@ -25,6 +25,8 @@
 // from C++ TUs without including <cstring>; bionic's transitive
 // includes provide the declarations, glibc's don't.
 #include <cstring>
+// numeric_limits<T> referenced without <limits> in libandroidfw.
+#include <limits>
 // Typedefs.
 using std::atomic_int;
 using std::atomic_uint;
