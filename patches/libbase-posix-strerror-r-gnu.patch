@@ -13,7 +13,7 @@
 diff --git a/posix_strerror_r.cpp b/posix_strerror_r.cpp
 --- a/posix_strerror_r.cpp
 +++ b/posix_strerror_r.cpp
-@@ -25,7 +25,18 @@ namespace base {
+@@ -25,7 +25,17 @@ namespace base {
  extern "C" int posix_strerror_r(int errnum, char* buf, size_t buflen) {
  #ifdef _WIN32
    return strerror_s(buf, buflen, errnum);
