@@ -4,7 +4,7 @@
 # container images, runs the AOSP sync inside them, runs the per-target
 # build script, and packages the result.
 
-SHELL := /usr/bin/env bash
+SHELL := /bin/bash
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
