@@ -1,0 +1,16 @@
+# Project: src/core
+# packagelistparser.cpp includes <sys/limits.h> which is a bionic-only
+# header. The glibc equivalent for the constants it uses (PATH_MAX
+# etc.) is plain <limits.h>.
+diff --git a/libpackagelistparser/packagelistparser.cpp b/libpackagelistparser/packagelistparser.cpp
+--- a/libpackagelistparser/packagelistparser.cpp
++++ b/libpackagelistparser/packagelistparser.cpp
+@@ -22,7 +22,7 @@
+ #include <inttypes.h>
+ #include <stdio.h>
+ #include <string.h>
+-#include <sys/limits.h>
++#include <limits.h>
+
+ #include <memory>
+
