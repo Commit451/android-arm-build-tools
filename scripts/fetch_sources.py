@@ -94,6 +94,12 @@ def install_shims(src_dir: Path, patch_dir: Path) -> None:
          "incremental_delivery/sysprop/IncrementalProperties.sysprop.cpp"),
         ("platform_tools_version.h",
          "soong/cc/libbuildversion/include/platform_tools_version.h"),
+        # aconfig-generated flag header for android.content.res, used by
+        # libandroidfw and aapt2 starting in Android 16. Real builds get
+        # this from Soong's aconfig codegen; we stub it with all flags
+        # disabled. Lands in an existing libandroidfw include dir.
+        ("android_content_res.h",
+         "base/libs/androidfw/include/android_content_res.h"),
     ]
     log("installing pre-generated source shims")
     for filename, rel_dest in drops:
