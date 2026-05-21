@@ -1,0 +1,172 @@
+name: upstream-watch
+
+# Daily check for new platform-tools-* tags upstream. When one is
+# found and we don't already have a Release for it, build the
+# linux-arm64 tools and publish them as a Release.
+#
+# Manual dispatch also supported, with an optional `force_tag`
+# input to skip detection and force a build of a specific tag.
+
+on:
+  schedule:
+    - cron: "0 8 * * *"          # daily at 08:00 UTC
+  workflow_dispatch:
+    inputs:
+      force_tag:
+        description: "Force a specific platform-tools-* tag (skip upstream detection)"
+        required: false
+
+permissions:
+  contents: write                  # for gh release create + git push
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.decide.outputs.tag }}
+      should_build: ${{ steps.decide.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect latest upstream tag
+        id: upstream
+        if: inputs.force_tag == ''
+        run: python3 scripts/check_upstream.py
+
+      - name: Decide whether to build
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.force_tag }}" ]; then
+            TAG="${{ inputs.force_tag }}"
+            echo "manual dispatch, force_tag=$TAG"
+          else
+            TAG="${{ steps.upstream.outputs.latest }}"
+            echo "upstream latest=$TAG"
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "no upstream tag detected; skipping"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Check if we already published a release for this tag.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $TAG already exists; skipping"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: detect
+    if: needs.detect.outputs.should_build == 'true'
+    # Larger ARM SKU — the basic ubuntu-24.04-arm runner has only
+    # ~14 GB disk which is too small for src/ (~5 GB) + build/
+    # intermediates (~5-10 GB). 16-core gives ~150 GB.
+    runs-on: ubuntu-24.04-arm-16-core
+    timeout-minutes: 120
+    outputs:
+      tag: ${{ needs.detect.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore source + ccache
+        uses: actions/cache@v4
+        with:
+          path: |
+            src
+            .ccache
+            build/host-protoc
+          # Per-tag cache: each upstream tag gets its own source
+          # tree, but ccache and host-protoc carry over.
+          key: aarbt-${{ needs.detect.outputs.tag }}-${{ runner.os }}-${{ runner.arch }}
+          restore-keys: |
+            aarbt-
+
+      - name: Build linux-arm64 tools
+        run: |
+          make linux-arm64 AOSP_BRANCH=${{ needs.detect.outputs.tag }}
+
+      - name: Strip binaries
+        run: |
+          for f in out/linux-arm64/aapt2 out/linux-arm64/aidl \
+                   out/linux-arm64/zipalign out/linux-arm64/split-select; do
+            if [ -f "$f" ]; then
+              aarch64-linux-gnu-strip "$f"
+              ls -la "$f"
+            fi
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64-${{ needs.detect.outputs.tag }}
+          path: |
+            out/linux-arm64/
+            out/dist/
+          retention-days: 7
+
+  release:
+    needs: [detect, build]
+    if: needs.detect.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-arm64-${{ needs.detect.outputs.tag }}
+          path: out/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.detect.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # Compute checksums for the discrete binaries.
+          ( cd out/linux-arm64 && sha256sum aapt2 aidl zipalign split-select ) \
+            > out/linux-arm64/SHA256SUMS
+
+          NOTES=$(cat <<EOF
+          Automated build of the AOSP build-tools binaries that an
+          Android Gradle Plugin build path actually invokes,
+          targeting **linux-glibc-arm64** (Raspberry Pi, Asahi Linux,
+          Ampere servers, native arm64 WSL, etc.).
+
+          Built from upstream AOSP tag \`$TAG\`.
+
+          ## Drop into your Android SDK
+
+          \`\`\`sh
+          SDK=~/Android/Sdk
+          BT=\${TAG#platform-tools-}
+          for f in aapt2 aidl zipalign split-select; do
+            cp out/linux-arm64/\$f "\$SDK/build-tools/\$BT/"
+            chmod +x "\$SDK/build-tools/\$BT/\$f"
+          done
+          \`\`\`
+
+          ## Verify
+
+          \`\`\`sh
+          sha256sum -c SHA256SUMS
+          \`\`\`
+          EOF
+          )
+
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG (linux-arm64)" \
+            --notes "$NOTES" \
+            out/dist/*.tar.xz \
+            out/linux-arm64/aapt2 \
+            out/linux-arm64/aidl \
+            out/linux-arm64/zipalign \
+            out/linux-arm64/split-select \
+            out/linux-arm64/SHA256SUMS

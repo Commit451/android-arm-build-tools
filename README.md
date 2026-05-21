@@ -14,6 +14,20 @@ Google ships `darwin-arm64` binaries in build-tools 34.0.0+, so
 Apple Silicon Macs are already covered upstream and are not a
 target here.
 
+## Downloads
+
+If you just want the binaries, grab them from the
+[Releases](https://github.com/Commit451/android-arm-buildtools/releases)
+tab. A GitHub Actions workflow (`.github/workflows/upstream-watch.yml`)
+polls AOSP daily for new `platform-tools-*` tags and publishes a
+fresh build for each one. The four binaries (`aapt2`, `aidl`,
+`zipalign`, `split-select`) are attached individually plus as a
+combined `.tar.xz`, with `SHA256SUMS` next to them.
+
+If a recent AOSP tag is missing from Releases, it likely failed to
+build cleanly — open an issue or run `make linux-arm64` locally to
+see what changed upstream and update `patches/` accordingly.
+
 ## Status — read this first
 
 | Target          | Status                                                                |
