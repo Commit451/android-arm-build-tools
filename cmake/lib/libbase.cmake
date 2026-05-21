@@ -15,7 +15,8 @@
 #
 
 add_library(libbase STATIC
-    ${SRC}/libbase/abi_compatibility.cpp
+    # abi_compatibility.cpp was removed in Android 16 (was a libcxx ABI
+    # transition shim, no longer needed).
     ${SRC}/libbase/chrono_utils.cpp
     ${SRC}/libbase/cmsg.cpp
     ${SRC}/libbase/file.cpp
