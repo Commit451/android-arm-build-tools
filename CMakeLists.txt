@@ -30,6 +30,11 @@ if(HAVE_FCOLOR_DIAGNOSTICS)
 endif()
 add_compile_options(-fPIC -Wno-attributes)
 
+# Force-included compat header — see cmake/shims/glibc_compat.h.
+# Provides stubs for Clang/bionic-only constructs (e.g.
+# __builtin_available) so AOSP source compiles under GCC + glibc.
+add_compile_options(-include ${PROJECT_SOURCE_DIR}/cmake/shims/glibc_compat.h)
+
 # Make off_t / lseek 64-bit on 32-bit platforms (and harmless on 64-bit).
 add_compile_definitions(_FILE_OFFSET_BITS=64)
 
