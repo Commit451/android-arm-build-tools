@@ -25,7 +25,13 @@ def log(msg: str) -> None:
 
 
 def clone_one(repo: dict, branch: str, src_dir: Path) -> tuple[str, bool, str]:
-    """Clone one repo. Returns (path, ok, message)."""
+    """Clone one repo. Returns (path, ok, message).
+
+    Existing checkouts are re-used only if their tip matches `branch`.
+    Otherwise the directory is removed and re-cloned — we never want
+    to silently build from a stale source tree (e.g. an
+    aarbt-* CI cache restored from a different AOSP_BRANCH).
+    """
     rel_path = repo["path"]
     # Project repos.json paths are relative to project root; strip the
     # leading "src/" so we can place them under whatever SRC_DIR is.
@@ -33,7 +39,22 @@ def clone_one(repo: dict, branch: str, src_dir: Path) -> tuple[str, bool, str]:
         rel_path = rel_path[len("src/"):]
     dest = src_dir / rel_path
     if dest.is_dir() and (dest / ".git").exists():
-        return (str(dest), True, "already cloned")
+        # Resolve the requested branch (a tag, here) to a commit SHA in
+        # the existing checkout, then compare against HEAD.
+        want = subprocess.run(
+            ["git", "rev-parse", "--verify", f"refs/tags/{branch}^{{commit}}"],
+            cwd=dest, capture_output=True, text=True,
+        )
+        have = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=dest, capture_output=True, text=True,
+        )
+        if want.returncode == 0 and have.returncode == 0 \
+                and want.stdout.strip() == have.stdout.strip():
+            return (str(dest), True, "already cloned (ref matches)")
+        # Mismatch (or the requested tag isn't even in this clone) —
+        # wipe and re-clone below.
+        shutil.rmtree(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     try:
         subprocess.run(
