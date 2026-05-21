@@ -65,15 +65,32 @@ jobs:
   build:
     needs: detect
     if: needs.detect.outputs.should_build == 'true'
-    # Larger ARM SKU — the basic ubuntu-24.04-arm runner has only
-    # ~14 GB disk which is too small for src/ (~5 GB) + build/
-    # intermediates (~5-10 GB). 16-core gives ~150 GB.
-    runs-on: ubuntu-24.04-arm-16-core
-    timeout-minutes: 120
+    # Free runner for public repos: 2 vCPU / 8 GB RAM / 14 GB disk.
+    # We need ~15 GB total (~5 GB src + ~5-10 GB build intermediates),
+    # so we delete the runner image's preinstalled SDKs/toolchains we
+    # don't use to free ~15-20 GB before the build starts.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
     outputs:
       tag: ${{ needs.detect.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Free disk on runner
+        run: |
+          echo "=== before ==="
+          df -h /
+          # Aggressively remove preinstalled bits we don't need.
+          # Failures here are non-fatal — paths vary by runner image.
+          sudo rm -rf /usr/local/lib/android   2>/dev/null || true
+          sudo rm -rf /usr/share/dotnet        2>/dev/null || true
+          sudo rm -rf /usr/share/swift         2>/dev/null || true
+          sudo rm -rf /opt/ghc                 2>/dev/null || true
+          sudo rm -rf /opt/hostedtoolcache     2>/dev/null || true
+          sudo docker system prune -af         2>/dev/null || true
+          sudo apt-get clean
+          echo "=== after ==="
+          df -h /
 
       - name: Restore source + ccache
         uses: actions/cache@v4
@@ -89,8 +106,11 @@ jobs:
             aarbt-
 
       - name: Build linux-arm64 tools
+        # 2-core runner. Setting JOBS=2 keeps cmake/ninja from
+        # over-parallelizing into the runner's 8 GB RAM (protobuf
+        # in particular is RAM-heavy under -O3).
         run: |
-          make linux-arm64 AOSP_BRANCH=${{ needs.detect.outputs.tag }}
+          make linux-arm64 AOSP_BRANCH=${{ needs.detect.outputs.tag }} JOBS=2
 
       - name: Strip binaries
         run: |
