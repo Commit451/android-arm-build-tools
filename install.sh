@@ -96,8 +96,14 @@ done
 echo
 "$DEST/aapt2" version | head -n1 || true
 echo
+# gradle.properties is Java Properties format. Backslashes in values
+# get consumed as escape introducers, so any `\` in the path has to be
+# doubled. Spaces, colons, slashes, and other typical path characters
+# are fine as-is. Doing the escape here means a user can paste the
+# line verbatim regardless of how exotic their SDK path is.
+GP_VALUE=$(printf '%s' "$DEST/aapt2" | sed 's|\\|\\\\|g')
 echo "done. If you're on AGP 9.x you also need to set"
-echo "  android.aapt2FromMavenOverride=$DEST/aapt2"
+echo "  android.aapt2FromMavenOverride=$GP_VALUE"
 echo "in gradle.properties — AGP 9 ignores the SDK's aapt2 and"
 echo "pulls its own (x86_64-only) from Maven. AGP 8.x and older"
 echo "don't need this; \`./gradlew :app:assembleDebug\` should just work."
