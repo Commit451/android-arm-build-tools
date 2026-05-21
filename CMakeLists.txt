@@ -38,6 +38,13 @@ add_compile_options(-include ${PROJECT_SOURCE_DIR}/cmake/shims/glibc_compat.h)
 # Make off_t / lseek 64-bit on 32-bit platforms (and harmless on 64-bit).
 add_compile_definitions(_FILE_OFFSET_BITS=64)
 
+# AOSP source (and bundled third-party like boringssl) assumes GNU
+# extensions: MAP_ANONYMOUS, strdup behavior, etc. bionic exposes these
+# unconditionally; glibc requires _GNU_SOURCE. Ubuntu 24.04's libc
+# headers were lax enough that this slipped through, but Debian 12's
+# stricter posture surfaces the gap. Define it once, globally.
+add_compile_definitions(_GNU_SOURCE)
+
 # Marker version recorded in libbuildversion (see patches/misc).
 set(TOOLS_VERSION 35.0.1)
 
