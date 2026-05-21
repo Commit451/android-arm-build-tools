@@ -1,0 +1,21 @@
+# Project: src/base
+# Util.cpp's Utf16ToUtf8 uses std::string::resize_and_overwrite, a
+# C++23 addition. The whole project compiles at C++20 (third-party
+# libs depend on that being stable). Rewrite the one call site with
+# the equivalent C++20-era idiom: resize(), then write into &*begin().
+diff --git a/libs/androidfw/Util.cpp b/libs/androidfw/Util.cpp
+--- a/libs/androidfw/Util.cpp
++++ b/libs/androidfw/Util.cpp
+@@ -68,10 +68,8 @@ std::string Utf16ToUtf8(StringPiece16 utf16) {
+   }
+
+   std::string utf8;
+-  utf8.resize_and_overwrite(utf8_length, [&utf16](char* data, size_t size) {
+-    utf16_to_utf8(utf16.data(), utf16.length(), data, size + 1);
+-    return size;
+-  });
++  utf8.resize(utf8_length);
++  utf16_to_utf8(utf16.data(), utf16.length(), &*utf8.begin(), utf8_length + 1);
+   return utf8;
+ }
+
