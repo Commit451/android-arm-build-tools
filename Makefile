@@ -1,8 +1,10 @@
 # android-arm-buildtools — top-level orchestration.
 #
 # All real work happens inside Docker. This Makefile builds the
-# container images, runs the AOSP sync inside them, runs the per-target
-# build script, and packages the result.
+# container image, clones the AOSP project repos listed in
+# repos.json, drives a CMake cross-build, and packages the result.
+#
+# See MIGRATION.md for the architecture switch from Soong to CMake.
 
 SHELL := /bin/bash
 .ONESHELL:
@@ -27,7 +29,7 @@ DOCKER_RUN_ARGS := \
 	-w /workspace \
 	-e AOSP_BRANCH=$(AOSP_BRANCH) \
 	-e BUILD_TOOLS_LABEL=$(BUILD_TOOLS_LABEL) \
-	-e SOONG_TARGETS="$(SOONG_TARGETS)" \
+	-e TARGETS="$(TARGETS)" \
 	-e JOBS=$(JOBS)
 
 DOCKER_RUN_INTERACTIVE := $(DOCKER_RUN_ARGS) -it
@@ -36,41 +38,37 @@ DOCKER_RUN_INTERACTIVE := $(DOCKER_RUN_ARGS) -it
 .PHONY: all linux-arm64 windows-arm64 fetch clean distclean \
         image-linux-arm64 image-windows-arm64 \
         shell-linux-arm64 shell-windows-arm64 \
-        binfmt help
+        help
 
 help:
 	@cat <<-'EOF'
 	  android-arm-buildtools
 	  ----------------------
-	  make linux-arm64       build everything for Linux ARM64
-	  make windows-arm64     cross-build for Windows ARM64 (experimental)
-	  make all               both of the above
-	  make fetch             just sync AOSP source
-	  make clean             remove out/
-	  make distclean         remove out/, aosp/, ccache, and images
-	  make shell-linux-arm64 drop into a shell in the linux-arm64 image
-	  make binfmt            (Linux hosts) register QEMU for foreign-arch images
+	  make linux-arm64       cross-build TARGETS for linux-glibc-arm64
+	  make windows-arm64     (still Soong-based, broken — see MIGRATION.md)
+	  make fetch             clone AOSP project repos into src/
+	  make clean             remove out/ and build/
+	  make distclean         clean + remove src/, ccache, and docker images
+	  make shell-linux-arm64 drop into a shell in the build image
+	  make help              this message
+
+	  Configure via config.env or VAR=value on the command line, e.g.:
+	    make linux-arm64 TARGETS=aapt2 AOSP_BRANCH=platform-tools-35.0.2
 	EOF
 
-all: linux-arm64 windows-arm64
-
-# One-time binfmt setup so x86_64 Linux hosts can run arm64 containers.
-# Docker Desktop does this automatically; bare docker engine doesn't.
-binfmt:
-	docker run --privileged --rm tonistiigi/binfmt --install arm64
+all: linux-arm64
 
 # ---- images -----------------------------------------------------------
+# Multi-arch: build for the host's native platform. CMake handles the
+# cross-compile to aarch64 internally via the toolchain file.
 image-linux-arm64:
-	docker buildx build \
-		--platform=linux/arm64 \
-		--load \
+	docker build \
 		-t $(IMG_LINUX_ARM64) \
 		-f docker/linux-arm64.Dockerfile \
 		docker/
 
 image-windows-arm64: image-linux-arm64
 	docker buildx build \
-		--platform=linux/arm64 \
 		--load \
 		--build-arg BASE_IMAGE=$(IMG_LINUX_ARM64) \
 		--build-arg LLVM_MINGW_VERSION=$(LLVM_MINGW_VERSION) \
@@ -82,7 +80,7 @@ image-windows-arm64: image-linux-arm64
 fetch: image-linux-arm64
 	docker run $(DOCKER_RUN_ARGS) \
 		$(IMG_LINUX_ARM64) \
-		python3 scripts/fetch_aosp.py
+		python3 scripts/fetch_sources.py
 
 linux-arm64: fetch
 	docker run $(DOCKER_RUN_ARGS) \
@@ -103,8 +101,8 @@ shell-windows-arm64: image-windows-arm64
 
 # ---- cleanup ----------------------------------------------------------
 clean:
-	rm -rf out/
+	rm -rf out/ build/
 
 distclean: clean
-	rm -rf aosp/ .ccache/
+	rm -rf src/ .ccache/
 	-docker image rm $(IMG_LINUX_ARM64) $(IMG_WINDOWS_ARM64) 2>/dev/null

@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""Build the configured Soong targets for linux-arm64 hosts.
+"""Cross-compile aapt2 (and eventually other build-tools) for
+linux-glibc-arm64 using CMake + the gcc-aarch64-linux-gnu toolchain.
 
-Runs inside the linux-arm64 build container.
+Two-phase build:
+  1. Host-side protoc — Soong's .proto files need protoc to run during
+     CMake configure, and the target-arch protoc can't run on the
+     build host (when host != arm64). So we build protoc separately
+     for the host first, then pass its path into the main build.
+  2. Target cross-compile — configures the root CMakeLists with our
+     aarch64 toolchain file and ninja-builds the aapt2 target.
 
 Reads from the environment:
-  SOONG_TARGETS    required, space-separated module names
+  TARGETS          optional, space-separated tool names (default: aapt2)
   JOBS             optional, defaults to os.cpu_count()
-  AOSP_DIR         optional, defaults to /workspace/aosp
+  WORKSPACE        optional, defaults to /workspace
   OUT_DIR          optional, defaults to /workspace/out/linux-arm64
 """
 
@@ -18,77 +25,99 @@ from pathlib import Path
 
 
 def log(msg: str) -> None:
-    print(f">>> {msg}", flush=True)
+    print(f"\n>>> {msg}", flush=True)
 
 
-def find_host_bin_dir(aosp_dir: Path, targets: list[str]) -> Path:
-    """Soong's host output directory name varies by branch
-    (linux-arm64, linux_glibc-arm64, sometimes linux-x86 on legacy
-    branches). Locate it by looking for any out/host/*/bin that has
-    at least one of our targets.
+def run(cmd: list[str], **kwargs) -> None:
+    subprocess.run(cmd, check=True, **kwargs)
+
+
+def build_host_protoc(workspace: Path, jobs: str) -> Path:
+    """Build protoc with the host compiler (whatever the container's
+    default gcc is). Returns the absolute path to the protoc binary.
     """
-    for candidate in sorted((aosp_dir / "out" / "host").glob("*/bin")):
-        for tool in targets:
-            exe = candidate / tool
-            if exe.is_file() and os.access(exe, os.X_OK):
-                return candidate
-    raise FileNotFoundError(
-        f"none of {targets} found under {aosp_dir}/out/host/*/bin"
+    src = workspace / "src" / "protobuf"
+    if not src.is_dir():
+        sys.exit(f"error: {src} does not exist; did fetch_sources.py run?")
+    build_dir = workspace / "build" / "host-protoc"
+    build_dir.mkdir(parents=True, exist_ok=True)
+
+    log(f"configure host protoc in {build_dir}")
+    run(
+        [
+            "cmake",
+            "-S", str(src),
+            "-B", str(build_dir),
+            "-G", "Ninja",
+            "-Dprotobuf_BUILD_TESTS=OFF",
+            "-Dprotobuf_BUILD_EXAMPLES=OFF",
+            "-DABSL_PROPAGATE_CXX_STD=ON",
+            "-DCMAKE_BUILD_TYPE=Release",
+        ],
     )
+    log("build host protoc")
+    run(["cmake", "--build", str(build_dir), "-j", jobs, "--target", "protoc"])
+
+    candidates = list(build_dir.glob("**/protoc")) + list(build_dir.glob("**/protoc-*"))
+    candidates = [c for c in candidates if c.is_file() and os.access(c, os.X_OK)]
+    if not candidates:
+        sys.exit(f"error: no protoc executable found under {build_dir}")
+    return candidates[0]
+
+
+def build_target(workspace: Path, protoc: Path, targets: list[str], jobs: str) -> Path:
+    """Cross-compile the configured targets. Returns the bin dir
+    where artifacts land."""
+    toolchain = workspace / "cmake" / "toolchain-aarch64-linux-gnu.cmake"
+    if not toolchain.is_file():
+        sys.exit(f"error: toolchain file missing at {toolchain}")
+    build_dir = workspace / "build" / "linux-arm64"
+    build_dir.mkdir(parents=True, exist_ok=True)
+
+    log(f"configure target build in {build_dir}")
+    run(
+        [
+            "cmake",
+            "-S", str(workspace),
+            "-B", str(build_dir),
+            "-G", "Ninja",
+            f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
+            f"-DPROTOC_PATH={protoc}",
+            "-DCMAKE_BUILD_TYPE=Release",
+        ],
+    )
+
+    log(f"build targets: {' '.join(targets)}")
+    run(["cmake", "--build", str(build_dir), "-j", jobs, "--target", *targets])
+
+    return build_dir / "bin"
 
 
 def main() -> int:
-    targets_str = os.environ.get("SOONG_TARGETS")
-    if not targets_str:
-        sys.exit("error: SOONG_TARGETS must be set")
+    targets_str = os.environ.get("TARGETS", "aapt2")
     targets = targets_str.split()
 
     jobs = os.environ.get("JOBS") or str(os.cpu_count() or 4)
-    aosp_dir = Path(os.environ.get("AOSP_DIR", "/workspace/aosp"))
+    workspace = Path(os.environ.get("WORKSPACE", "/workspace"))
     out_dir = Path(os.environ.get("OUT_DIR", "/workspace/out/linux-arm64"))
 
-    # AOSP's envsetup.sh defines bash functions (lunch, m) so the
-    # build chain has to run in bash, not invoked piece by piece.
-    # aosp_arm64-eng is a benign device target; host-only builds
-    # ignore device target specifics.
-    soong_cmd = (
-        "set -e\n"
-        "source build/envsetup.sh\n"
-        "lunch aosp_arm64-eng\n"
-        f"m -j{jobs} {' '.join(targets)}\n"
-    )
-    log(f"building host tools: {' '.join(targets)}")
-    subprocess.run(["bash", "-c", soong_cmd], cwd=aosp_dir, check=True)
+    log(f"workspace: {workspace}")
+    log(f"targets:   {' '.join(targets)}")
+    log(f"jobs:      {jobs}")
+
+    protoc = build_host_protoc(workspace, jobs)
+    log(f"host protoc: {protoc}")
+
+    bin_dir = build_target(workspace, protoc, targets, jobs)
 
     out_dir.mkdir(parents=True, exist_ok=True)
-
-    log("locating host output directory")
-    try:
-        host_bin_dir = find_host_bin_dir(aosp_dir, targets)
-    except FileNotFoundError as e:
-        print(f"!! {e}", file=sys.stderr)
-        print("   directories that exist:", file=sys.stderr)
-        for d in sorted((aosp_dir / "out" / "host").glob("*")):
-            print(f"     {d}", file=sys.stderr)
-        return 1
-
-    log(f"collecting from {host_bin_dir}")
-    for tool in targets:
-        src = host_bin_dir / tool
-        if src.is_file() and os.access(src, os.X_OK):
-            shutil.copy2(src, out_dir / tool)
-            print(f"  copied {tool}")
-        else:
-            print(f"  !! {tool} not found at {src}")
-
-    lib_dir = host_bin_dir.parent / "lib64"
-    if not lib_dir.is_dir():
-        lib_dir = host_bin_dir.parent / "lib"
-    if lib_dir.is_dir():
-        dest = out_dir / lib_dir.name
-        dest.mkdir(exist_ok=True)
-        for so in lib_dir.glob("lib*.so"):
-            shutil.copy2(so, dest / so.name)
+    log(f"collecting artifacts from {bin_dir}")
+    for entry in bin_dir.rglob("*"):
+        if entry.is_file() and os.access(entry, os.X_OK):
+            tool = entry.name
+            if tool in targets:
+                shutil.copy2(entry, out_dir / tool)
+                print(f"  copied {tool}")
 
     log(f"done. Artifacts in {out_dir}:")
     for entry in sorted(out_dir.iterdir()):

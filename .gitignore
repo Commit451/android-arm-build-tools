@@ -1,4 +1,6 @@
 aosp/
+src/
+build/
 out/
 .ccache/
 *.log
