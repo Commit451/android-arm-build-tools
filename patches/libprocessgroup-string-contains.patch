@@ -7,7 +7,7 @@ diff --git a/libprocessgroup/util/util.cpp b/libprocessgroup/util/util.cpp
 +++ b/libprocessgroup/util/util.cpp
 @@ -225,7 +225,7 @@ bool ReadDescriptors(CgroupDescriptorMap* descriptors) {
          }
-
+ 
          if (const auto it = v1Mounts->find(controller->path()); it != v1Mounts->end()) {
 -            if (it->second.contains(controller->name())) descriptor.set_mounted(true);
 +            if (it->second.find(controller->name()) != std::string::npos) descriptor.set_mounted(true);
