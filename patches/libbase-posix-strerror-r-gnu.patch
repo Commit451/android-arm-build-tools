@@ -1,0 +1,25 @@
+# Project: src/libbase
+# Handle GNU strerror_r() (returns char*) in addition to the POSIX
+# variant (returns int). bionic ships the POSIX one, so the original
+# code just forwarded the return value. glibc defaults to GNU.
+diff --git a/posix_strerror_r.cpp b/posix_strerror_r.cpp
+--- a/posix_strerror_r.cpp
++++ b/posix_strerror_r.cpp
+@@ -25,8 +25,18 @@ namespace base {
+ extern "C" int posix_strerror_r(int errnum, char* buf, size_t buflen) {
+ #ifdef _WIN32
+   return strerror_s(buf, buflen, errnum);
++#elif defined(__GLIBC__) && defined(_GNU_SOURCE)
++  // glibc's strerror_r is GNU-style (returns char*) under _GNU_SOURCE.
++  // Normalize to POSIX semantics: copy into caller's buffer if needed
++  // and return 0.
++  const char* r = strerror_r(errnum, buf, buflen);
++  if (r != buf && buflen > 0) {
++    strncpy(buf, r, buflen);
++    buf[buflen - 1] = '\0';
++  }
++  return 0;
+ #else
+   return strerror_r(errnum, buf, buflen);
+ #endif
+ }
