@@ -18,37 +18,41 @@ target here.
 
 | Target          | Status                                                                |
 | --------------- | --------------------------------------------------------------------- |
-| `linux-arm64`   | **Not currently functional.** Needs a refactor to cross-build from x86_64 — see below. |
-| `windows-arm64` | Experimental, untested. Same refactor will apply.                     |
+| `linux-arm64`   | **Working.** Verified-runnable `aapt2` produced on 2026-05-21 against AOSP `platform-tools-35.0.2`. |
+| `windows-arm64` | Stale (still based on the abandoned Soong path). Needs its own pivot to the CMake approach with `aarch64-w64-mingw32`. |
 
-Earlier versions of this README claimed `linux-arm64` was the
-"primary path" built natively in an ARM64 container. A cloud-side
-test on 2026-05-20 against AOSP `android-15.0.0_r1` proved this
-wrong: AOSP's `prebuilts/` directory contains only `linux-x86`
-variants of the toolchain Soong needs to bootstrap itself (Go,
-clang, build-tools). There is no `prebuilts/go/linux-arm64/`. Soong
-fails immediately on an ARM64 host with:
+The original Soong-based pipeline was a dead end against stable
+AOSP — AOSP doesn't ship `prebuilts/go/linux-arm64` or
+`prebuilts/clang/host/linux-arm64`, and the only "arm64 Linux host"
+config in `build/soong/cc/config/` is the bionic-on-Linux variant
+(unsuitable for glibc users). See `MIGRATION.md` for the full
+write-up.
 
-```
-prebuilts/go/linux-x86/bin/go: cannot execute binary file:
-Exec format error
-```
+The current pipeline:
 
-### Path forward
+1. clones ~40 specific AOSP project repos at the configured tag
+   (~5 GB on disk, instead of AOSP's full ~125 GB working tree),
+2. builds a host-side `protoc` from the cloned protobuf sources,
+3. cross-compiles aapt2 + its transitive AOSP libs (libbase,
+   liblog, libcutils, libutils, libandroidfw, libincfs, libselinux,
+   libsepol, libziparchive, libbuildversion, libpackagelistparser)
+   with `gcc-aarch64-linux-gnu` against glibc,
+4. drops the resulting `aapt2` (ELF aarch64, dynamically linked to
+   glibc's `/lib/ld-linux-aarch64.so.1`) into `out/linux-arm64/`.
 
-The fix is to **cross-build from an x86_64 host** instead of
-building natively on an arm64 host. Soong supports this via
-`HOST_CROSS_OS=linux HOST_CROSS_ARCH=arm64` (the same mechanism
-the windows-arm64 path uses for that target). Outputs land in
-`out/host/linux_glibc-arm64/bin/` and run on arm64 Linux.
+A force-included compat header (`cmake/shims/glibc_compat.h`)
+covers the bionic-vs-glibc gaps that came up — bare C11 atomic
+typedef names in C++ TUs, `__builtin_available`, `<cstring>`/`<memory>`
+not pulled in transitively. Specific in-source patches live in
+`patches/` (protobuf config.h, libbase strerror_r, libandroidfw
+designated-initializer + map_ptr iterator, libpackagelistparser
+header swap, aapt2 GCC-ICE workaround, atrace stubs).
 
-Concretely, the Dockerfile would change from `arm64v8/ubuntu:22.04`
-to `ubuntu:22.04` (x86_64), the build container itself runs
-natively on any x86_64 host or under Apple Silicon's Rosetta, and
-the Makefile passes the cross-host flags to `m`. None of this is
-in place yet — the current `linux-arm64.Dockerfile` and
-`build_linux_arm64.py` assume the now-disproven native-arm64
-approach.
+Other build-tools binaries (`aapt`, `aidl`, `zipalign`, `dexdump`,
+`split-select`) follow the same shape; their CMake fragments
+already exist as `cmake/build-tools/*.cmake` from the lzhiyong
+import and just need the same glibc-vs-bionic deltas. Add them
+to `TARGETS` in `config.env` and iterate.
 
 ### Other test findings worth knowing
 
