@@ -13,10 +13,30 @@
 // API level, so make every such guard succeed unconditionally.
 #define __builtin_available(...) (true)
 
+// Clang nullability qualifiers used by Android 16 libutils. They're
+// purely informational — drop them in GCC. (Force-included so any TU
+// that uses them parses; the assembler guard further down keeps this
+// out of .S files.)
+#ifndef _Nonnull
+#define _Nonnull
+#endif
+#ifndef _Nullable
+#define _Nullable
+#endif
+#ifndef _Null_unspecified
+#define _Null_unspecified
+#endif
+
 // Force-included into every TU regardless of language — including the
 // .S files in src/libpng/arm/. The assembler can't parse C headers
 // or function bodies, so everything below must be skipped for it.
 #ifndef __ASSEMBLER__
+
+// libutils/Threads.cpp (Android 16+) ports bionic's C11 thrd_create
+// trampoline to glibc and references android_pthread_entry, which
+// bionic typedefs in <bits/threads_inlines.h>. glibc has no such
+// header; the typedef is just `int (*)(void *)`.
+typedef int (*android_pthread_entry)(void *);
 
 // strlcpy/strlcat are BSD functions bionic has always had; AOSP's
 // liblog and friends call them as if they're always available. glibc
