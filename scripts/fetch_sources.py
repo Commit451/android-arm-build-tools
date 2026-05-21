@@ -107,6 +107,27 @@ def install_shims(src_dir: Path, patch_dir: Path) -> None:
         print(f"  installed {filename} -> {rel_dest}")
 
 
+def link_protobuf_submodules(src_dir: Path) -> None:
+    """Newer protobuf (25.x+, shipped from android-16.0.0_r4 onward)
+    has its third_party/utf8_range/CMakeLists.txt do an unconditional
+    `add_subdirectory(../abseil-cpp)`. That path is empty in a plain
+    clone — upstream populates it via git submodules, which we don't
+    do. We already clone abseil separately, so symlink it into the
+    spot protobuf expects.
+    """
+    protobuf = src_dir / "protobuf"
+    abseil = src_dir / "abseil-cpp"
+    if not protobuf.is_dir() or not abseil.is_dir():
+        return
+    target = protobuf / "third_party" / "abseil-cpp"
+    if target.exists() or target.is_symlink():
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    # Relative symlink so the link is portable across containers.
+    target.symlink_to(Path("../../abseil-cpp"))
+    log(f"linked {target.relative_to(src_dir)} -> ../../abseil-cpp")
+
+
 def fix_aapt2_proto_paths(src_dir: Path) -> None:
     """aapt2's .proto files import sibling .proto files by their
     full AOSP path (e.g. `import "frameworks/base/tools/aapt2/Resources.proto"`).
@@ -211,6 +232,7 @@ def main() -> int:
         return 1
 
     install_shims(src_dir, patch_dir)
+    link_protobuf_submodules(src_dir)
     fix_aapt2_proto_paths(src_dir)
     apply_patches(src_dir, patch_dir)
 
