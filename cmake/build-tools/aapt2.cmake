@@ -131,6 +131,9 @@ add_library(libaapt2 STATIC
     ${SRC}/base/tools/aapt2/io/ZipArchive.cpp
     ${SRC}/base/tools/aapt2/link/AutoVersioner.cpp
     ${SRC}/base/tools/aapt2/link/FeatureFlagsFilter.cpp
+    # New in Android 16, both wired up from cmd/Link.cpp:
+    ${SRC}/base/tools/aapt2/link/FlaggedXmlVersioner.cpp
+    ${SRC}/base/tools/aapt2/link/FlagNotEnabledResourceRemover.cpp
     ${SRC}/base/tools/aapt2/link/ManifestFixer.cpp
     ${SRC}/base/tools/aapt2/link/NoDefaultResourceRemover.cpp
     ${SRC}/base/tools/aapt2/link/PrivateAttributeMover.cpp
@@ -150,6 +153,8 @@ add_library(libaapt2 STATIC
     ${SRC}/base/tools/aapt2/split/TableSplitter.cpp
     ${SRC}/base/tools/aapt2/text/Printer.cpp
     ${SRC}/base/tools/aapt2/text/Unicode.cpp
+    # Android 16 split the unicode tables into their own TU.
+    ${SRC}/base/tools/aapt2/text/Unicode_data.cpp
     ${SRC}/base/tools/aapt2/text/Utf8Iterator.cpp
     ${SRC}/base/tools/aapt2/util/Files.cpp
     ${SRC}/base/tools/aapt2/util/Util.cpp
