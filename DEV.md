@@ -129,17 +129,30 @@ make linux-arm64 AOSP_BRANCH=platform-tools-35.0.1 JOBS=2
 ## CI / upstream tracker
 
 `.github/workflows/upstream-watch.yml` runs daily at 08:00 UTC.
-`scripts/check_upstream.py` queries two sources — sdkmanager's
-`repository2-3.xml` for the build-tools versions Google ships, and
-AOSP's `platform/build` tags for the versions we can build from
-source — and picks the highest version present in both sets. If
-that's newer than the version we last released, it builds and
-publishes a new GitHub Release.
+`scripts/check_upstream.py` resolves every `build-tools;X.Y.Z`
+sdkmanager publishes to a build-from source ref via three tiers,
+tried in order:
 
-If sdkmanager publishes a new version but AOSP hasn't tagged its
-source for it (as happened with 36.x and 37.x), `check_upstream.py`
-won't pick it. That's intentional: shipping a build of "kinda this
-version" would mislead users about what they're installing.
+  1. **`KNOWN_MAPPINGS`** — an explicit, hand-verified table at the
+     top of the script. Wins unconditionally. Add an entry after
+     verifying a new version's source point.
+  2. **Legacy `platform-tools-X.Y.Z`** AOSP tag — works for the
+     pre-rename versions (through 35.0.2).
+  3. **Heuristic `android-(X-20).0.0_rN`** — for `X >= 36`, take the
+     highest `_rN` of the matching Android major. Latest revision
+     wins (`_r4` over `_r3` etc.).
+
+If none resolve, the version is `no-source` — sdkmanager has it
+but no buildable AOSP ref exists yet (37.0.0 today). We track it
+in the script output but don't try to build.
+
+The workflow's cron path reads the resolver's `next_*` outputs
+(next_tag / next_source / next_sdk) and dispatches a build against
+those. If a release already exists for `next_tag`, the workflow
+skips — keeping cron idle until something new appears upstream.
+
+Manual dispatch with `force_tag` overrides everything; use it for
+backfill or to rebuild a specific version (see Releases tab).
 
 You can manually dispatch the workflow at any time from the
 [Actions tab](https://github.com/Commit451/android-arm-buildtools/actions/workflows/upstream-watch.yml).

@@ -52,28 +52,32 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${{ inputs.force_tag }}" ]; then
+            # Manual dispatch overrides everything. source_ref/label
+            # come from the dispatch inputs (or fall back to the
+            # legacy "derive from tag" behavior below).
             TAG="${{ inputs.force_tag }}"
+            SOURCE_REF="${{ inputs.source_ref }}"
+            LABEL="${{ inputs.label }}"
             echo "manual dispatch, force_tag=$TAG"
           else
-            TAG="${{ steps.upstream.outputs.latest }}"
-            echo "upstream latest=$TAG"
+            # Cron path: take everything from check_upstream.py's
+            # resolver output. The resolver knows the legacy vs.
+            # heuristic vs. mapped source-ref scheme; the workflow
+            # just consumes its decision.
+            TAG="${{ steps.upstream.outputs.next_tag }}"
+            SOURCE_REF="${{ steps.upstream.outputs.next_source }}"
+            LABEL="${{ steps.upstream.outputs.next_sdk }}"
+            echo "upstream next=$TAG (source=$SOURCE_REF status=${{ steps.upstream.outputs.next_status }})"
           fi
 
           if [ -z "$TAG" ]; then
-            echo "no upstream tag detected; skipping"
+            echo "no buildable version detected; skipping"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # source_ref defaults to TAG (legacy behavior). When set,
-          # lets us build from a different AOSP ref than the release
-          # is named after — e.g. android-16.0.0_r4 source published
-          # as platform-tools-36.0.0.
-          SOURCE_REF="${{ inputs.source_ref }}"
+          # Fallback fills when the dispatch inputs omit them.
           [ -z "$SOURCE_REF" ] && SOURCE_REF="$TAG"
-
-          # label defaults to TAG with platform-tools- stripped.
-          LABEL="${{ inputs.label }}"
           [ -z "$LABEL" ] && LABEL="${TAG#platform-tools-}"
 
           echo "source_ref=$SOURCE_REF" >> "$GITHUB_OUTPUT"
