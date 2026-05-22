@@ -1,0 +1,17 @@
+# Project: src/base
+# tools/aapt2/cmd/Command.cpp uses a C++23 `static` lambda specifier
+# (P1169). GCC 13 implements it; GCC 12 — what Debian Bookworm ships —
+# does not. The specifier is a non-capturing optimization hint only,
+# so dropping it changes nothing observable.
+diff --git a/tools/aapt2/cmd/Command.cpp b/tools/aapt2/cmd/Command.cpp
+--- a/tools/aapt2/cmd/Command.cpp
++++ b/tools/aapt2/cmd/Command.cpp
+@@ -272,7 +272,7 @@ int Command::Execute(const std::vector<android::StringPiece>& args, std::ostream
+       return 1;
+     }
+
+-    static constexpr auto matchShortArg = [](std::string_view arg, const Flag& flag) static {
++    static constexpr auto matchShortArg = [](std::string_view arg, const Flag& flag) {
+       return flag.name.starts_with("--") &&
+              arg.compare(0, 2, std::string_view(flag.name.c_str() + 1, 2)) == 0;
+     };
