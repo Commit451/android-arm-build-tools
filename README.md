@@ -1,7 +1,5 @@
 # android-arm-build-tools
 
-> Project site: **<https://android-arm-build-tools.commit451.com>**
-
 Drop-in `aapt2`, `aidl`, `zipalign`, and `split-select` binaries for
 **Linux on ARM64** — the four Android SDK build-tools that
 Gradle/AGP actually invokes during a normal app build.
