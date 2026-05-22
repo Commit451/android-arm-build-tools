@@ -151,7 +151,7 @@ const releasesUrl = `${repoUrl}/releases`;
           steps, but on AGP 9+ also add this to
           <code>gradle.properties</code> (project- or user-level):
         </p>
-        <pre class="gradle-properties no-prompt"><code>android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/{latest}/aapt2</code></pre>
+        <pre class="no-prompt"><code>android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/{latest}/aapt2</code></pre>
         <p style="margin-bottom:0">
           Restart the Gradle daemon afterward (<code>./gradlew --stop</code>).
           AGP 8.x and older don't need this — they still shell out to the SDK's

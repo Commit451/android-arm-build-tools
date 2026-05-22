@@ -158,7 +158,6 @@ pre::before {
   user-select: none;
 }
 pre.no-prompt::before { content: ""; }
-pre.gradle-properties::before { content: "# gradle.properties\n"; }
 
 ul {
   list-style: none;
