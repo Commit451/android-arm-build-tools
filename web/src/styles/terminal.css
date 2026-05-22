@@ -1,0 +1,340 @@
+/* Terminal/retro theme. Warm amber on dark, monospace everywhere,
+   minimal chrome. Tries to feel like reading a man page through a
+   nicely-themed terminal — readable, not LARP-y. */
+
+:root {
+  --bg: #0c1014;
+  --bg-elev: #11161c;
+  --bg-code: #060a0e;
+  --fg: #d8d6c5;
+  --fg-dim: #7b7a6c;
+  --fg-faint: #4a4940;
+  --accent: #ffb454;      /* warm amber, for headings + active */
+  --accent-soft: #c9a76b; /* dimmer amber for prompts */
+  --link: #7dd3fc;        /* cyan-blue, for hyperlinks */
+  --link-hover: #b6e7ff;
+  --good: #9ece6a;
+  --warn: #e0af68;
+  --bad: #f7768e;
+  --rule: #1d242d;
+  --rule-bright: #2b3640;
+  --shadow: 0 0 0 1px var(--rule);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  /* Subtle scanline overlay — easy to disable if it grates. */
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.012) 0,
+    rgba(255, 255, 255, 0.012) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--fg);
+  font-family:
+    "JetBrains Mono",
+    ui-monospace,
+    "SF Mono",
+    Menlo,
+    Consolas,
+    "DejaVu Sans Mono",
+    monospace;
+  font-size: 14.5px;
+  line-height: 1.6;
+  font-feature-settings: "calt" 0, "liga" 0;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* a faint vignette + ambient glow that mimics a CRT */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
+  z-index: 0;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+}
+
+/* prompt-style heading prefix */
+h1, h2, h3 {
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0;
+}
+h1 {
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+h2 {
+  font-size: 16px;
+  margin: 56px 0 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  text-transform: lowercase;
+}
+h2::before {
+  content: "## ";
+  color: var(--fg-faint);
+}
+h3 {
+  font-size: 14px;
+  margin: 28px 0 12px;
+  text-transform: lowercase;
+}
+h3::before {
+  content: "### ";
+  color: var(--fg-faint);
+}
+
+p {
+  margin: 0 0 14px;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--rule-bright);
+}
+a:hover {
+  color: var(--link-hover);
+  border-bottom-color: var(--link-hover);
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: inherit;
+}
+
+:not(pre) > code {
+  background: var(--bg-code);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-size: 0.95em;
+  border: 1px solid var(--rule);
+}
+
+pre {
+  background: var(--bg-code);
+  color: var(--fg);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--accent-soft);
+  padding: 14px 18px;
+  overflow-x: auto;
+  margin: 12px 0 20px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+pre::before {
+  content: "$ ";
+  color: var(--accent-soft);
+  user-select: none;
+}
+pre.no-prompt::before { content: ""; }
+pre.gradle-properties::before { content: "# gradle.properties\n"; }
+
+ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 8px 0 14px;
+}
+ul li {
+  position: relative;
+  padding-left: 18px;
+  margin: 2px 0;
+}
+ul li::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: var(--accent-soft);
+}
+
+hr {
+  border: none;
+  border-top: 1px dashed var(--rule-bright);
+  margin: 32px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 24px;
+  font-size: 13.5px;
+}
+th, td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+th {
+  color: var(--fg-dim);
+  font-weight: 500;
+  text-transform: lowercase;
+  border-bottom: 1px solid var(--rule-bright);
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+}
+tbody tr:hover {
+  background: var(--bg-elev);
+}
+
+/* --- bespoke pieces ----------------------------------------------- */
+
+.banner {
+  color: var(--accent);
+  font-size: 12.5px;
+  line-height: 1.25;
+  margin: 0 0 16px;
+  white-space: pre;
+  overflow-x: auto;
+  /* keep the ASCII tight even on narrow screens; it's allowed to scroll */
+}
+.tagline {
+  color: var(--fg-dim);
+  margin: 6px 0 24px;
+}
+.tagline::before {
+  content: "// ";
+  color: var(--fg-faint);
+}
+
+.cursor {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--bg);
+  padding: 0 2px;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.cta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0 4px;
+}
+.cta a {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--rule-bright);
+  border-bottom: 1px solid var(--rule-bright);
+  color: var(--fg);
+  text-transform: lowercase;
+}
+.cta a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.cta a::before {
+  content: "[ ";
+  color: var(--fg-faint);
+}
+.cta a::after {
+  content: " ]";
+  color: var(--fg-faint);
+}
+
+.callout {
+  border: 1px solid var(--rule-bright);
+  border-left: 2px solid var(--warn);
+  background: var(--bg-elev);
+  padding: 14px 18px;
+  margin: 16px 0 22px;
+}
+.callout .label {
+  display: inline-block;
+  color: var(--warn);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.versions td.version {
+  color: var(--accent);
+  font-weight: 600;
+}
+.versions td.status-mapped {
+  color: var(--good);
+}
+.versions td.status-legacy {
+  color: var(--accent-soft);
+}
+.versions td.status-heuristic {
+  color: var(--warn);
+}
+.versions td.source {
+  color: var(--fg-dim);
+}
+
+.compat-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 24px;
+  margin: 12px 0 22px;
+}
+.compat-grid > div:nth-child(odd) {
+  color: var(--fg);
+}
+.compat-grid > div:nth-child(even) {
+  color: var(--good);
+  text-align: right;
+}
+
+footer {
+  margin-top: 80px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  color: var(--fg-dim);
+  font-size: 12.5px;
+}
+footer .shrug {
+  color: var(--accent-soft);
+  margin-top: 18px;
+  white-space: pre;
+}
+footer .meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  main { padding: 28px 16px 64px; }
+  h1 { font-size: 18px; }
+  .banner { font-size: 10px; }
+  pre { padding: 12px; }
+  th, td { padding: 6px 8px; }
+}

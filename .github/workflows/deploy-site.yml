@@ -1,0 +1,67 @@
+name: deploy-site
+
+# Build the Astro site under web/ and publish it to GitHub Pages.
+# Custom domain comes from web/public/CNAME.
+#
+# Runs on push to main when anything in web/ (or this file) changes,
+# and on manual dispatch. The GitHub Releases data the page renders
+# is fetched at build time, so a re-run also refreshes the version
+# table — handy after upstream-watch publishes a new release.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/deploy-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deploy at a time; let in-flight ones finish so a
+# half-deployed site can't go live.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install deps
+        working-directory: web
+        run: npm install --no-audit --no-fund --no-progress
+
+      - name: Build Astro site
+        working-directory: web
+        env:
+          # Lets the build-time GitHub API fetch use the workflow token
+          # so we don't hit the 60-req/hour unauthenticated rate limit
+          # if the runner's egress IP is shared with other consumers.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

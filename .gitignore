@@ -1,7 +1,9 @@
-src/
-build/
-out/
-.ccache/
+# AOSP clones + build artifacts only at the repo root (these names
+# would otherwise also match web/src/, etc., which we want tracked).
+/src/
+/build/
+/out/
+/.ccache/
 *.log
 .DS_Store
 __pycache__/

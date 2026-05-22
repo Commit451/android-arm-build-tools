@@ -1,0 +1,256 @@
+---
+import "../styles/terminal.css";
+
+const repo = "Commit451/android-arm-build-tools";
+const siteName = "android-arm-build-tools";
+
+// --- live releases (fetched at build time) ----------------------------
+// Falls back to an empty list if the GitHub API is unreachable or
+// rate-limited at build time. The page still renders.
+let releases: any[] = [];
+try {
+  const res = await fetch(`https://api.github.com/repos/${repo}/releases`, {
+    headers: {
+      "User-Agent": `${siteName}-site`,
+      "Accept": "application/vnd.github+json",
+    },
+  });
+  if (res.ok) releases = await res.json();
+} catch (_e) {
+  // ignored — page renders without the live list
+}
+
+// Mirror of scripts/check_upstream.py's KNOWN_MAPPINGS so we can
+// show readers which AOSP source ref each release was built from.
+// Keep in sync when adding new mapped versions.
+const SOURCE_BY_VERSION: Record<string, { ref: string; status: string; label: string }> = {
+  "36.1.0": { ref: "android-16.0.0_r3", status: "mapped",   label: "Android 16 QPR1" },
+  "36.0.0": { ref: "android-16.0.0_r1", status: "mapped",   label: "Android 16 GA"   },
+  "35.0.1": { ref: "platform-tools-35.0.1", status: "legacy", label: "Android 15"    },
+};
+
+type Version = {
+  version: string;
+  tag: string;
+  date: string;
+  url: string;
+  ref: string;
+  status: string;
+  label: string;
+};
+
+const versions: Version[] = releases
+  .filter((r) => !r.draft && !r.prerelease && r.tag_name.startsWith("platform-tools-"))
+  .map((r) => {
+    const version = r.tag_name.replace(/^platform-tools-/, "");
+    const meta = SOURCE_BY_VERSION[version] ?? {
+      ref: "—",
+      status: "unknown",
+      label: "—",
+    };
+    return {
+      version,
+      tag: r.tag_name,
+      date: r.published_at ? new Date(r.published_at).toISOString().slice(0, 10) : "—",
+      url: r.html_url,
+      ...meta,
+    };
+  });
+
+const latest = versions[0]?.version ?? "36.1.0";
+const repoUrl = `https://github.com/${repo}`;
+const releasesUrl = `${repoUrl}/releases`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>android-arm-build-tools — Linux ARM64 build-tools for Android</title>
+    <meta
+      name="description"
+      content="Drop-in aapt2 / aidl / zipalign / split-select binaries for Linux ARM64. Build Android apps on a Raspberry Pi, Asahi Linux, Ampere server, or arm64 WSL without exec format error."
+    />
+    <meta property="og:title" content="android-arm-build-tools" />
+    <meta
+      property="og:description"
+      content="Drop-in aapt2 / aidl / zipalign / split-select binaries for Linux ARM64."
+    />
+    <meta property="og:type" content="website" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+  </head>
+  <body>
+    <main>
+      <pre class="banner">┌─────────────────────────────────────────────────────────────┐
+│  {siteName}                            v{latest}  │
+└─────────────────────────────────────────────────────────────┘</pre>
+
+      <h1>$ {siteName}<span class="cursor">&nbsp;</span></h1>
+      <p class="tagline">
+        drop-in <code>aapt2</code>, <code>aidl</code>, <code>zipalign</code>,
+        <code>split-select</code> for <strong>Linux ARM64</strong>.
+      </p>
+
+      <div class="cta">
+        <a href="#install">install.sh</a>
+        <a href="#versions">releases</a>
+        <a href={repoUrl}>source</a>
+      </div>
+
+      <h2 id="why">why does this exist</h2>
+      <p>
+        Google's <code>sdkmanager</code> ships these four binaries for
+        <code>linux-x86_64</code> only. On a Raspberry Pi, Asahi Linux box,
+        ARM Chromebook, Ampere server, or native-arm64 WSL, the Android
+        Gradle Plugin invokes them and gets <code>exec format error</code>
+        instead of an APK.
+      </p>
+      <p>
+        This project bypasses Soong, clones ~40 specific AOSP repos, and
+        cross-compiles the four binaries against glibc with
+        <code>gcc-aarch64-linux-gnu</code>. Result: drop in, build APKs
+        natively on arm64.
+      </p>
+
+      <h2 id="install">install</h2>
+      <p>
+        Install the matching build-tools first via <code>sdkmanager</code> —
+        the Java pieces (<code>apksigner</code>, <code>dx</code>, etc.) come
+        from there. We only replace the four native binaries.
+      </p>
+      <pre><code>sdkmanager "build-tools;{latest}"</code></pre>
+      <p>Then run the installer:</p>
+      <pre><code>curl -fsSL https://raw.githubusercontent.com/{repo}/main/install.sh | bash</code></pre>
+      <p>
+        The script picks up the latest release, detects your SDK via
+        <code>$ANDROID_HOME</code> / <code>$ANDROID_SDK_ROOT</code> /
+        <code>~/Android/Sdk</code>, and writes the binaries into
+        <code>$SDK/build-tools/&lt;version&gt;/</code>. To pin a specific
+        version or use a non-default SDK path:
+      </p>
+      <pre><code>./install.sh --version {latest} --sdk /opt/android-sdk</code></pre>
+      <p>
+        It refuses to run on non-aarch64 hosts and on SDKs missing the
+        target <code>build-tools/&lt;version&gt;/</code> directory.
+      </p>
+
+      <h3 id="agp9">agp 9.x: also point aapt2 at the arm64 binary</h3>
+      <div class="callout">
+        <span class="label">extra step</span>
+        <p>
+          Android Gradle Plugin 9.x stopped using the SDK's
+          <code>aapt2</code> and instead pulls its own from Maven
+          (<code>com.android.tools.build:aapt2:&lt;agp&gt;:linux</code>),
+          which is x86_64-only. The drop-in is still needed by other build
+          steps, but on AGP 9+ also add this to
+          <code>gradle.properties</code> (project- or user-level):
+        </p>
+        <pre class="gradle-properties no-prompt"><code>android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/{latest}/aapt2</code></pre>
+        <p style="margin-bottom:0">
+          Restart the Gradle daemon afterward (<code>./gradlew --stop</code>).
+          AGP 8.x and older don't need this — they still shell out to the SDK's
+          <code>aapt2</code>.
+        </p>
+      </div>
+
+      <h2 id="versions">available versions</h2>
+      {versions.length > 0 ? (
+        <>
+          <p style="margin-bottom: 4px">
+            Auto-refreshed when the site rebuilds. Each tag is built from
+            the AOSP source ref shown.
+          </p>
+          <table class="versions">
+            <thead>
+              <tr>
+                <th>version</th>
+                <th>android</th>
+                <th>source ref</th>
+                <th>status</th>
+                <th>published</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {versions.map((v) => (
+                <tr>
+                  <td class="version">{v.version}</td>
+                  <td>{v.label}</td>
+                  <td class="source"><code>{v.ref}</code></td>
+                  <td class={`status-${v.status}`}>{v.status}</td>
+                  <td>{v.date}</td>
+                  <td><a href={v.url}>download</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : (
+        <p>
+          See the <a href={releasesUrl}>releases tab</a> for the current list
+          (GitHub API was unreachable at site-build time).
+        </p>
+      )}
+
+      <h3 id="missing">what about 37.0.0 or whatever's newer than the latest above</h3>
+      <p>
+        sdkmanager sometimes publishes a build-tools version before AOSP
+        tags the corresponding source publicly. <code>37.0.0</code> is the
+        current example: Google ships the binary but the underlying source
+        hasn't appeared in any public AOSP branch we can build from. When
+        that changes, our daily workflow auto-detects the new tag and a
+        matching arm64 release lands here — no action needed on this end.
+      </p>
+
+      <h2 id="compat">compatibility</h2>
+      <p>
+        Binaries are built on Debian 12 (Bookworm) — glibc 2.36, GCC 12 —
+        so they need glibc 2.36+ and GLIBCXX_3.4.30+ at runtime. Distros
+        that work out of the box:
+      </p>
+      <div class="compat-grid">
+        <div>Raspberry Pi OS Bookworm <span style="color:var(--fg-dim)">(glibc 2.36)</span></div><div>✓</div>
+        <div>Debian 12+</div><div>✓</div>
+        <div>Ubuntu 22.04+ <span style="color:var(--fg-dim)">(glibc 2.35, close enough)</span></div><div>✓</div>
+        <div>Fedora 38+ / Asahi Linux</div><div>✓</div>
+        <div>Anything newer than the above</div><div>✓</div>
+      </div>
+      <p>
+        Older distros: <a href={`${repoUrl}/blob/main/DEV.md`}>build from source</a>
+        against your distro's libc.
+      </p>
+
+      <h2 id="verify">verify</h2>
+      <p>
+        After install, this should work in any AGP project without
+        <code>exec format error</code>:
+      </p>
+      <pre><code>./gradlew :app:assembleDebug</code></pre>
+      <p>Or smoke-test the binary directly:</p>
+      <pre><code>$ANDROID_HOME/build-tools/{latest}/aapt2 version
+# Android Asset Packaging Tool (aapt) 2.X-...</code></pre>
+
+      <h2 id="more">links</h2>
+      <ul>
+        <li><a href={repoUrl}>source on github</a></li>
+        <li><a href={releasesUrl}>all releases</a></li>
+        <li><a href={`${repoUrl}/blob/main/DEV.md`}>building from source / contributing</a></li>
+        <li><a href={`${repoUrl}/issues`}>issues</a></li>
+      </ul>
+
+      <footer>
+        <div class="meta">
+          <span>MIT licensed · <a href={repoUrl}>{repo}</a></span>
+          <span>updated automatically as upstream AOSP publishes new tags</span>
+        </div>
+        <div class="shrug">\\ ゜o゜)ノ</div>
+      </footer>
+    </main>
+  </body>
+</html>
