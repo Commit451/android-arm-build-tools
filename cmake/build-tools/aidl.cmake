@@ -84,6 +84,10 @@ add_executable(aidl
     )
     
 target_include_directories(aidl PRIVATE
+    # Android 16 split out aidl/transaction_ids.h into its own
+    # include/ subdir; add it so `#include <aidl/transaction_ids.h>`
+    # resolves.
+    ${SRC}/aidl/include
     ${SRC}/libbase/include
     ${SRC}/fmtlib/include
     ${SRC}/googletest/googletest/include
