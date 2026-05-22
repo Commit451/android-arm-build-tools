@@ -113,6 +113,42 @@ def install_shims(src_dir: Path, patch_dir: Path) -> None:
         print(f"  installed {filename} -> {rel_dest}")
 
 
+def swap_std_format_for_fmt(src_dir: Path) -> None:
+    """aidl source (android-16+) uses C++23 std::format from <format>.
+    libstdc++ 12 (Debian Bookworm) has only a partial <format> impl
+    that isn't usable by default. We already link fmtlib, which has
+    an API-compatible fmt::format. Swap the includes + the call sites.
+
+    Limited to aidl's compiled-in TUs; we do not touch the unit-test
+    file (aidl_unittest.cpp) which uses std::vformat — it's not in
+    our build.
+    """
+    aidl_dir = src_dir / "aidl"
+    if not aidl_dir.is_dir():
+        return
+    targets = [
+        "aidl_to_cpp_common.cpp",
+        "generate_java.cpp",
+        "generate_cpp.cpp",
+        # aidl_to_common.cpp + aidl.h pull <format> transitively via
+        # aidl.h (which includes transaction_ids.h, but std::format is
+        # only in the .cpp files). The .h doesn't reference <format>.
+    ]
+    touched = []
+    for name in targets:
+        f = aidl_dir / name
+        if not f.is_file():
+            continue
+        text = f.read_text()
+        new = text.replace("#include <format>", "#include <fmt/format.h>") \
+                  .replace("std::format(", "fmt::format(")
+        if new != text:
+            f.write_text(new)
+            touched.append(name)
+    if touched:
+        log(f"swapped std::format -> fmt::format in: {', '.join(touched)}")
+
+
 def link_protobuf_submodules(src_dir: Path) -> None:
     """Newer protobuf (25.x+, shipped from android-16.0.0_r4 onward)
     has its third_party/utf8_range/CMakeLists.txt do an unconditional
@@ -251,6 +287,7 @@ def main() -> int:
 
     install_shims(src_dir, patch_dir)
     link_protobuf_submodules(src_dir)
+    swap_std_format_for_fmt(src_dir)
     fix_aapt2_proto_paths(src_dir)
     apply_patches(src_dir, patch_dir)
 
