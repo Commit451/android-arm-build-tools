@@ -131,9 +131,6 @@ add_library(libaapt2 STATIC
     ${SRC}/base/tools/aapt2/io/ZipArchive.cpp
     ${SRC}/base/tools/aapt2/link/AutoVersioner.cpp
     ${SRC}/base/tools/aapt2/link/FeatureFlagsFilter.cpp
-    # New in Android 16, both wired up from cmd/Link.cpp:
-    ${SRC}/base/tools/aapt2/link/FlaggedXmlVersioner.cpp
-    ${SRC}/base/tools/aapt2/link/FlagNotEnabledResourceRemover.cpp
     ${SRC}/base/tools/aapt2/link/ManifestFixer.cpp
     ${SRC}/base/tools/aapt2/link/NoDefaultResourceRemover.cpp
     ${SRC}/base/tools/aapt2/link/PrivateAttributeMover.cpp
@@ -186,6 +183,21 @@ add_library(libaapt2 STATIC
     ${SRC}/base/tools/aapt2/ValueTransformer.cpp 
     ${AAPT2_PROTO_SRC} ${AAPT2_PROTO_HDRS}
     )
+
+# Files that exist in some AOSP refs but not all. We carry the full
+# set in the source list above (latest-version-friendly), and
+# add the version-specific ones via target_sources only when the file
+# is actually present in the cloned tree. Lets the same cmake config
+# work across QPR boundaries within an Android major release.
+foreach(_optional_src
+    # Both new in Android 16 QPR2 (android-16.0.0_r4) — not in r3:
+    ${SRC}/base/tools/aapt2/link/FlaggedXmlVersioner.cpp
+    ${SRC}/base/tools/aapt2/link/FlagNotEnabledResourceRemover.cpp
+)
+    if(EXISTS ${_optional_src})
+        target_sources(libaapt2 PRIVATE ${_optional_src})
+    endif()
+endforeach()
 target_include_directories(libaapt2 PRIVATE ${INCLUDES})
 target_compile_options(libaapt2 PRIVATE ${COMPILE_FLAGS})
 

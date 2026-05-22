@@ -32,10 +32,6 @@ add_library(libandroidfw STATIC
     ${SRC}/base/libs/androidfw/LoadedArsc.cpp
     ${SRC}/base/libs/androidfw/Locale.cpp
     ${SRC}/base/libs/androidfw/LocaleData.cpp
-    # New in Android 16: LocaleData.cpp now delegates lookups
-    # (findParentLocalePackedKey, isLocaleRepresentative, ...) to
-    # this companion TU.
-    ${SRC}/base/libs/androidfw/LocaleDataLookup.cpp
     ${SRC}/base/libs/androidfw/misc.cpp
     ${SRC}/base/libs/androidfw/NinePatch.cpp
     ${SRC}/base/libs/androidfw/ObbFile.cpp
@@ -52,10 +48,25 @@ add_library(libandroidfw STATIC
     ${SRC}/base/libs/androidfw/Util.cpp
     ${SRC}/base/libs/androidfw/ZipFileRO.cpp
     ${SRC}/base/libs/androidfw/ZipUtils.cpp  
-    ${SRC}/base/libs/androidfw/PathUtils.cpp     
+    ${SRC}/base/libs/androidfw/PathUtils.cpp
     )
 
-target_compile_definitions(libandroidfw PRIVATE 
+# Files that exist in some AOSP refs but not all. Conditionally
+# wire them in so the same cmake config builds across QPR
+# boundaries within a single Android major release.
+foreach(_optional_src
+    # New in Android 16 QPR2 (android-16.0.0_r4) — not in r3.
+    # LocaleData.cpp delegates findParentLocalePackedKey /
+    # isLocaleRepresentative / etc. to this companion TU starting
+    # with QPR2.
+    ${SRC}/base/libs/androidfw/LocaleDataLookup.cpp
+)
+    if(EXISTS ${_optional_src})
+        target_sources(libandroidfw PRIVATE ${_optional_src})
+    endif()
+endforeach()
+
+target_compile_definitions(libandroidfw PRIVATE
     -DSTATIC_ANDROIDFW_FOR_TOOLS
     -D_GNU_SOURCE -DNDEBUG
     )
