@@ -190,8 +190,13 @@ add_library(libaapt2 STATIC
 # is actually present in the cloned tree. Lets the same cmake config
 # work across QPR boundaries within an Android major release.
 foreach(_optional_src
-    # Both new in Android 16 QPR2 (android-16.0.0_r4) — not in r3:
+    # Present in Android 16 QPR1 (_r3) and QPR2 (_r4):
     ${SRC}/base/tools/aapt2/link/FlaggedXmlVersioner.cpp
+    # QPR1 (_r3) version of the flag-remover. The class was renamed in
+    # QPR2; cmd/Link.cpp references whichever exists, so we add both
+    # files conditionally and let the present one resolve at link time.
+    ${SRC}/base/tools/aapt2/link/FlagDisabledResourceRemover.cpp
+    # QPR2 (_r4) renamed version.
     ${SRC}/base/tools/aapt2/link/FlagNotEnabledResourceRemover.cpp
 )
     if(EXISTS ${_optional_src})
