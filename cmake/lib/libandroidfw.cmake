@@ -32,6 +32,10 @@ add_library(libandroidfw STATIC
     ${SRC}/base/libs/androidfw/LoadedArsc.cpp
     ${SRC}/base/libs/androidfw/Locale.cpp
     ${SRC}/base/libs/androidfw/LocaleData.cpp
+    # New in Android 16: LocaleData.cpp now delegates lookups
+    # (findParentLocalePackedKey, isLocaleRepresentative, ...) to
+    # this companion TU.
+    ${SRC}/base/libs/androidfw/LocaleDataLookup.cpp
     ${SRC}/base/libs/androidfw/misc.cpp
     ${SRC}/base/libs/androidfw/NinePatch.cpp
     ${SRC}/base/libs/androidfw/ObbFile.cpp
