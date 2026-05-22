@@ -16,7 +16,12 @@ cmake_minimum_required(VERSION 3.18)
 project(android-arm-buildtools)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 20)
+# Android 16 source uses scattered C++23 features (std::string::contains,
+# std::string::resize_and_overwrite, `static` lambdas, tuple->pair
+# conversions). GCC 12.2 supports them under -std=c++23. Bumping the
+# whole build is cheaper than patching each call site, and the third-
+# party libs (abseil, protobuf, googletest) all build cleanly at C++23.
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 enable_language(ASM)
 
