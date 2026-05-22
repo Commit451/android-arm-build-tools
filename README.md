@@ -132,6 +132,11 @@ and `SHA256SUMS` attached.
 
 See [`DEV.md`](DEV.md).
 
+Refs
+- https://github.com/termux/android-build-tools
+- https://github.com/lzhiyong/android-sdk-tools
+- https://github.com/nmeum/android-tools
+
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
