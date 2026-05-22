@@ -88,7 +88,15 @@ def build_target(workspace: Path, protoc: Path, targets: list[str], jobs: str) -
     )
 
     log(f"build targets: {' '.join(targets)}")
-    run(["cmake", "--build", str(build_dir), "-j", jobs, "--target", *targets])
+    # `-- -k 0` passes --keep-going to the underlying ninja: keep
+    # compiling other TUs after a failure so one CI run surfaces every
+    # broken file at once, not just the first. We still exit non-zero
+    # if any target failed, so this doesn't hide errors — it just
+    # batches them.
+    run([
+        "cmake", "--build", str(build_dir), "-j", jobs,
+        "--target", *targets, "--", "-k", "0",
+    ])
 
     return build_dir / "bin"
 
