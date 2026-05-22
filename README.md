@@ -8,7 +8,7 @@ Google's `sdkmanager` only ships these for `linux-x86_64`. On a
 Raspberry Pi, Asahi Linux machine, ARM Chromebook, Ampere server,
 or native-arm64 WSL, AGP fails with `exec format error` until you
 swap in arm64 builds. This project ships those, automatically
-rebuilt for each new upstream AOSP `platform-tools-*` release.
+rebuilt as upstream AOSP publishes new build-tools source tags.
 
 ## Install
 
@@ -17,7 +17,7 @@ You already need the matching build-tools installed via
 from there; we only replace the four native binaries).
 
 ```sh
-sdkmanager "build-tools;35.0.1"
+sdkmanager "build-tools;36.1.0"
 ```
 
 Then run the installer:
@@ -35,9 +35,10 @@ To pin a specific version, or use a non-default SDK path:
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Commit451/android-arm-buildtools/main/install.sh -o install.sh
 chmod +x install.sh
-./install.sh --version 35.0.1 --sdk /opt/android-sdk
+./install.sh --version 36.0.0 --sdk /opt/android-sdk
 ```
 
+Available versions are listed on the [Releases tab](https://github.com/Commit451/android-arm-buildtools/releases).
 The script refuses to run on non-aarch64 hosts and on hosts that
 don't already have the matching `build-tools/<version>/` directory.
 
@@ -52,7 +53,7 @@ binary directly. Add this to your project's `gradle.properties`
 (or `~/.gradle/gradle.properties` to apply globally):
 
 ```properties
-android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/35.0.1/aapt2
+android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/36.1.0/aapt2
 ```
 
 Use the full path to the `aapt2` that this project's installer
@@ -74,7 +75,7 @@ After install, this should work in any AGP project without
 Or smoke-test the binary directly:
 
 ```sh
-$ANDROID_HOME/build-tools/35.0.1/aapt2 version
+$ANDROID_HOME/build-tools/36.1.0/aapt2 version
 # Android Asset Packaging Tool (aapt) 2.X-...
 ```
 
@@ -93,22 +94,35 @@ that work out of the box:
 If you're on something older, [build from source](DEV.md) against
 your distro's libc.
 
-## Why we ship 35.0.1 when sdkmanager has 37.0.0
+## Available versions
 
-AOSP's `platform/build` source tree only tags through
-`platform-tools-35.0.2`. Versions 36.0.0, 36.1.0, and 37.0.0 are
-published through `sdkmanager` but never tagged in AOSP source —
-so there's nothing to build them from. We ship the highest version
-that's in both catalogs. (35.0.2 is AOSP-tagged but not in
-sdkmanager either; 35.0.1 is the intersection.) AGP doesn't
-require build-tools to match `compileSdk`, so 35.0.1 + `compileSdk
-36` is a fine combination.
+We ship the versions where AOSP has tagged public source we can
+build from. As of writing:
+
+- `36.1.0` — Android 16 QPR1, built from `android-16.0.0_r3`
+- `36.0.0` — Android 16 GA, built from `android-16.0.0_r1`
+- `35.0.1` — Android 15, built from `platform-tools-35.0.1`
+
+AGP doesn't require build-tools to match `compileSdk`, so any of
+the above paired with e.g. `compileSdk 36` works fine.
+
+### What about 37.0.0 / 36.2.0 / future versions?
+
+sdkmanager sometimes publishes a build-tools version before AOSP
+tags the corresponding source publicly. 37.0.0 is the current
+example: Google ships the binary but the underlying source hasn't
+appeared in any public AOSP branch we can build from. When that
+changes, our daily workflow auto-detects the new tag and publishes
+a matching arm64 build (no action needed on this end). See
+[`DEV.md`](DEV.md) for the resolver design.
 
 ## Releases
 
 All builds are on the [Releases tab](https://github.com/Commit451/android-arm-buildtools/releases).
-A GitHub Actions workflow polls AOSP daily for new
-`platform-tools-*` tags and publishes a fresh build for each one.
+A GitHub Actions workflow runs daily, resolves each sdkmanager
+build-tools version to an AOSP source ref (legacy `platform-tools-*`
+tag or the newer `android-NN.0.0_rN` scheme), and publishes a
+fresh release when something new shows up.
 
 If you'd rather grab a single binary directly, each Release has
 `aapt2`, `aidl`, `zipalign`, `split-select`, a combined `.tar.xz`,

@@ -1,5 +1,23 @@
 # Migration: Soong → CMake + glibc cross-toolchain
 
+> **Historical doc.** This captured the plan when the project pivoted
+> off Soong in May 2026. The migration itself is long done; current
+> setup is in [`README.md`](README.md) (end-user) and [`DEV.md`](DEV.md)
+> (contributors). A few specifics here are now out of date:
+>
+> - Base image is `debian:bookworm-slim`, not `ubuntu:24.04`. We
+>   switched after `ubuntu:24.04`-built binaries needed `GLIBC_2.38`
+>   and refused to load on Raspberry Pi OS Bookworm (glibc 2.36).
+> - The `windows-arm64` path was removed entirely once the linux-arm64
+>   pipeline stabilized.
+> - We're no longer pinned to `platform-tools-35.0.2`. The build
+>   handles both legacy `platform-tools-*` tags and the newer
+>   `android-NN.0.0_rN` scheme via a resolver in
+>   `scripts/check_upstream.py`.
+>
+> Kept here for archaeology — useful if a future pivot has to revisit
+> the same Soong-vs-CMake tradeoffs.
+
 ## Why
 
 The current implementation tries to drive AOSP's Soong build system in
