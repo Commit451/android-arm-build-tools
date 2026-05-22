@@ -153,8 +153,9 @@ add_library(libaapt2 STATIC
     ${SRC}/base/tools/aapt2/split/TableSplitter.cpp
     ${SRC}/base/tools/aapt2/text/Printer.cpp
     ${SRC}/base/tools/aapt2/text/Unicode.cpp
-    # Android 16 split the unicode tables into their own TU.
-    ${SRC}/base/tools/aapt2/text/Unicode_data.cpp
+    # Unicode_data.cpp is NOT compiled standalone — Unicode.cpp does
+    # `#include "text/Unicode_data.cpp"` at the bottom to pull the
+    # tables in. Don't add it to the source list.
     ${SRC}/base/tools/aapt2/text/Utf8Iterator.cpp
     ${SRC}/base/tools/aapt2/util/Files.cpp
     ${SRC}/base/tools/aapt2/util/Util.cpp
