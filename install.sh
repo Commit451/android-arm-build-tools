@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# install android-arm-buildtools binaries into your Android SDK.
-# See https://github.com/Commit451/android-arm-buildtools
+# install android-arm-build-tools binaries into your Android SDK.
+# See https://github.com/Commit451/android-arm-build-tools
 #
 # Replaces the linux-x86_64 native binaries (aapt2, aidl, zipalign,
 # split-select) that sdkmanager installed with aarch64-glibc builds,
@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-REPO="Commit451/android-arm-buildtools"
+REPO="Commit451/android-arm-build-tools"
 SDK=""
 BT_VERSION="auto"
 

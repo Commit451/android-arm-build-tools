@@ -1,4 +1,4 @@
-# android-arm-buildtools
+# android-arm-build-tools
 
 Drop-in `aapt2`, `aidl`, `zipalign`, and `split-select` binaries for
 **Linux on ARM64** — the four Android SDK build-tools that
@@ -23,7 +23,7 @@ sdkmanager "build-tools;36.1.0"
 Then run the installer:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Commit451/android-arm-buildtools/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Commit451/android-arm-build-tools/main/install.sh | bash
 ```
 
 That picks up the latest Release, detects your SDK via
@@ -33,12 +33,12 @@ the binaries into `$SDK/build-tools/<version>/`.
 To pin a specific version, or use a non-default SDK path:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Commit451/android-arm-buildtools/main/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/Commit451/android-arm-build-tools/main/install.sh -o install.sh
 chmod +x install.sh
 ./install.sh --version 36.0.0 --sdk /opt/android-sdk
 ```
 
-Available versions are listed on the [Releases tab](https://github.com/Commit451/android-arm-buildtools/releases).
+Available versions are listed on the [Releases tab](https://github.com/Commit451/android-arm-build-tools/releases).
 The script refuses to run on non-aarch64 hosts and on hosts that
 don't already have the matching `build-tools/<version>/` directory.
 
@@ -118,7 +118,7 @@ a matching arm64 build (no action needed on this end). See
 
 ## Releases
 
-All builds are on the [Releases tab](https://github.com/Commit451/android-arm-buildtools/releases).
+All builds are on the [Releases tab](https://github.com/Commit451/android-arm-build-tools/releases).
 A GitHub Actions workflow runs daily, resolves each sdkmanager
 build-tools version to an AOSP source ref (legacy `platform-tools-*`
 tag or the newer `android-NN.0.0_rN` scheme), and publishes a

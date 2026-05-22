@@ -1,4 +1,4 @@
-# DEV.md — building android-arm-buildtools from source
+# DEV.md — building android-arm-build-tools from source
 
 For people who want to rebuild the binaries themselves, hack on
 the pipeline, add more tools, or debug a CI failure when AOSP
@@ -116,14 +116,14 @@ Knobs in `config.env`, overridable on the make command line:
 
 | Variable            | Default                                       | Meaning                            |
 | ------------------- | --------------------------------------------- | ---------------------------------- |
-| `AOSP_BRANCH`       | `platform-tools-35.0.1`                       | git tag applied to every cloned repo |
-| `BUILD_TOOLS_LABEL` | `35.0.1`                                      | metadata for artifact filenames    |
+| `AOSP_BRANCH`       | `android-16.0.0_r3`                           | git tag/branch cloned for every repo (local-dev default; CI overrides) |
+| `BUILD_TOOLS_LABEL` | `36.1.0`                                      | metadata for artifact filenames    |
 | `TARGETS`           | `aapt2 aidl zipalign split-select`            | which binaries to build            |
 | `JOBS`              | container `nproc`                             | parallel build jobs                |
 | `CCACHE_DIR`        | `./.ccache`                                   | persisted across runs              |
 
 ```sh
-make linux-arm64 AOSP_BRANCH=platform-tools-35.0.1 JOBS=2
+make linux-arm64 AOSP_BRANCH=android-16.0.0_r1 BUILD_TOOLS_LABEL=36.0.0 JOBS=2
 ```
 
 ## CI / upstream tracker
@@ -155,7 +155,7 @@ Manual dispatch with `force_tag` overrides everything; use it for
 backfill or to rebuild a specific version (see Releases tab).
 
 You can manually dispatch the workflow at any time from the
-[Actions tab](https://github.com/Commit451/android-arm-buildtools/actions/workflows/upstream-watch.yml).
+[Actions tab](https://github.com/Commit451/android-arm-build-tools/actions/workflows/upstream-watch.yml).
 The optional `force_tag` input skips detection and builds a
 specific tag — useful for re-running after fixing a broken patch.
 

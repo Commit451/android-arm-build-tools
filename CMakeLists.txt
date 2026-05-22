@@ -1,4 +1,4 @@
-# Root CMakeLists for android-arm-buildtools.
+# Root CMakeLists for android-arm-build-tools.
 #
 # Builds Android SDK build-tools native binaries (starting with aapt2)
 # for linux-glibc-arm64, using a cross-toolchain (or natively if the
@@ -13,7 +13,7 @@
 # needs and retarget the toolchain from NDK/Android to glibc/Linux.
 
 cmake_minimum_required(VERSION 3.18)
-project(android-arm-buildtools)
+project(android-arm-build-tools)
 
 set(CMAKE_C_STANDARD 11)
 # Android 16 source uses scattered C++23 features (std::string::contains,

@@ -40,7 +40,7 @@ def main() -> int:
     base = f"android-build-tools-{label}-{target}-{stamp}"
 
     manifest = (
-        "android-arm-buildtools artifact\n"
+        "android-arm-build-tools artifact\n"
         f"target           : {target}\n"
         f"build-tools tag  : {label}\n"
         f"aosp branch      : {branch}\n"

@@ -1,4 +1,4 @@
-# android-arm-buildtools — top-level orchestration.
+# android-arm-build-tools — top-level orchestration.
 #
 # All real work happens inside Docker. This Makefile builds the
 # container image, clones the AOSP project repos listed in
@@ -18,7 +18,7 @@ export
 PROJECT_DIR := $(abspath .)
 
 # Image name.
-IMG_LINUX_ARM64 := android-arm-buildtools-linux-arm64:latest
+IMG_LINUX_ARM64 := android-arm-build-tools-linux-arm64:latest
 
 # Common docker-run flags. Build steps run non-interactively so they
 # work under CI; shell-* targets layer `-it` on top for a real terminal.
@@ -41,7 +41,7 @@ DOCKER_RUN_INTERACTIVE := $(DOCKER_RUN_ARGS) -it
 
 help:
 	@cat <<-'EOF'
-	  android-arm-buildtools
+	  android-arm-build-tools
 	  ----------------------
 	  make linux-arm64       cross-build TARGETS for linux-glibc-arm64
 	  make fetch             clone AOSP project repos into src/

@@ -62,7 +62,7 @@ RUN if id -u 1000 >/dev/null 2>&1; then userdel -r "$(id -un 1000)" 2>/dev/null 
 
 USER ${USERNAME}
 RUN git config --global user.name "AOSP Builder" \
-    && git config --global user.email "builder@android-arm-buildtools.local"
+    && git config --global user.email "builder@android-arm-build-tools.local"
 
 ENV USE_CCACHE=1 \
     CCACHE_DIR=/workspace/.ccache
