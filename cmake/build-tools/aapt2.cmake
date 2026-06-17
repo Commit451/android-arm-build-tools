@@ -67,6 +67,11 @@ set(INCLUDES
     # we don't go through target_link_libraries for the protobuf-generated
     # headers — add abseil's source dir to the include path directly.
     ${SRC}/abseil-cpp
+    # Same propagation gap, newer trigger: protobuf (Android 17+) makes
+    # parse_context.h — a public header reached from every generated
+    # *.pb.h — include "utf8_validity.h", which lives in protobuf's
+    # bundled utf8_range copy rather than under src/. Add it directly.
+    ${SRC}/protobuf/third_party/utf8_range
     ${SRC}/logging/liblog/include
     ${SRC}/expat/lib
     ${SRC}/fmtlib/include
