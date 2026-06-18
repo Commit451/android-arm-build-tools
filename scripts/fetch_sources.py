@@ -212,10 +212,14 @@ def apply_patches(src_dir: Path, patch_dir: Path) -> None:
     log(f"applying patches from {patch_dir}")
     for p in patches:
         project = None
+        optional = False
         for line in p.read_text().splitlines():
             if line.startswith("# Project:"):
                 project = line[len("# Project:"):].strip()
-                break
+            elif line.startswith("# Optional:"):
+                optional = line[len("# Optional:"):].strip().lower() in ("1", "true", "yes")
+            elif line.startswith(("diff ", "--- ")):
+                break  # reached the diff body; headers sit above it
         if not project:
             print(f"  !! {p.name} missing '# Project:' header, skipping")
             continue
@@ -248,6 +252,11 @@ def apply_patches(src_dir: Path, patch_dir: Path) -> None:
                 ["git", "apply", "-p1", str(p)], cwd=proj_dir, check=True
             )
             print(f"  applied {p.name} -> {project}")
+        elif optional:
+            # Optional patches only apply to some source revisions — e.g.
+            # a fixup for a file or build-system layout that newer AOSP
+            # dropped. Not applying is expected here, not a breakage.
+            print(f"  skipped {p.name} (optional; not applicable to {project})")
         else:
             err = (fwd.stderr or "").strip().split("\n")[-1]
             print(f"  !! STALE {p.name} ({project}): {err}")
