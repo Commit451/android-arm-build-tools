@@ -194,6 +194,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.detect.outputs.tag }}
+          SOURCE_REF: ${{ needs.detect.outputs.source_ref }}
         run: |
           set -euo pipefail
           # Compute checksums for the discrete binaries.
@@ -206,7 +207,7 @@ jobs:
           targeting **linux-glibc-arm64** (Raspberry Pi, Asahi Linux,
           Ampere servers, native arm64 WSL, etc.).
 
-          Built from upstream AOSP tag \`$TAG\`.
+          Built from upstream AOSP source tag \`$SOURCE_REF\`.
 
           ## Drop into your Android SDK
 
@@ -227,9 +228,18 @@ jobs:
           EOF
           )
 
+          # The release name is the build-tools version
+          # (platform-tools-X.Y.Z); the AOSP ref it's actually built from
+          # can differ (e.g. android-17.0.0_r1). Surface the source ref in
+          # the title too when the two diverge.
+          TITLE="$TAG (linux-arm64)"
+          if [ "$SOURCE_REF" != "$TAG" ]; then
+            TITLE="$TITLE · $SOURCE_REF"
+          fi
+
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --title "$TAG (linux-arm64)" \
+            --title "$TITLE" \
             --notes "$NOTES" \
             out/dist/*.tar.xz \
             out/linux-arm64/aapt2 \
