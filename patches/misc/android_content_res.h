@@ -36,3 +36,4 @@
 #define android_content_res_enhanced_debugging()                        false
 #define android_content_res_idmap_crc_is_mtime()                        false
 #define android_content_res_merge_idmap_binder_transactions()           false
+#define android_content_res_xml_file_size_limit()                       false

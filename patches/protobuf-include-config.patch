@@ -1,9 +1,15 @@
 # Project: src/protobuf
-# AOSP's protobuf source has its config.h under config/, but upstream
-# protobuf's CMakeLists.txt doesn't add that dir to the include path,
-# so src/google/protobuf/stubs/common.cc fails with:
+# Optional: true
+# AOSP's protobuf through ~25.x (Android 16) keeps its config.h under
+# config/, but upstream protobuf's CMakeLists.txt doesn't add that dir
+# to the include path, so src/google/protobuf/stubs/common.cc fails with:
 #   fatal error: config.h: No such file or directory
 # This adds the include path. Same as lzhiyong's protobuf_CMakeLists.txt.patch.
+#
+# Marked Optional: Android 17 ships protobuf 33.5.0, which dropped the
+# generated config.h / config dir entirely (no config.h include left in
+# the sources). The patch correctly no longer applies there and is
+# skipped quietly rather than flagged STALE.
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt

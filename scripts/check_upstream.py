@@ -21,8 +21,8 @@ Resolution is three tiers, tried in order for each sdkmanager version:
      (which has been true since the renaming).
 
 If none of the three resolve, the version is `no-source` — Google has
-published the binary but AOSP hasn't tagged the source yet (37.0.0 is
-the current example). We track it but can't build it.
+published the binary but AOSP hasn't tagged the source yet. We track
+it but can't build it until the matching android-NN.0.0_rN appears.
 
 Output (stdout): JSON manifest of all sdkmanager versions and their
 resolutions. Output to $GITHUB_OUTPUT (when set): the legacy
@@ -53,10 +53,8 @@ KNOWN_MAPPINGS: dict[tuple[int, int, int], str] = {
     # build-tools 36.x lines up with Android 16 (NN = X + 20):
     (36, 0, 0): "android-16.0.0_r1",  # Android 16 GA — verified local + CI
     (36, 1, 0): "android-16.0.0_r3",  # Android 16 QPR1 — verified local + CI
-    # 37.0.0 is intentionally absent: as of writing, AOSP has no
-    # `android-17.*` branch or tag, and the sdkmanager binary uses
-    # proto fields not present in any 16.x snapshot. Will be filled
-    # in once Google publishes the matching source.
+    # build-tools 37.x -> Android 17 (same NN = X + 20 rule):
+    (37, 0, 0): "android-17.0.0_r1",  # Android 17 GA — verified local (Pi) + CI
 }
 
 
