@@ -24,6 +24,7 @@ try {
 // show readers which AOSP source ref each release was built from.
 // Keep in sync when adding new mapped versions.
 const SOURCE_BY_VERSION: Record<string, { ref: string; status: string; label: string }> = {
+  "37.0.0": { ref: "android-17.0.0_r1", status: "mapped",   label: "Android 17 GA"   },
   "36.1.0": { ref: "android-16.0.0_r3", status: "mapped",   label: "Android 16 QPR1" },
   "36.0.0": { ref: "android-16.0.0_r1", status: "mapped",   label: "Android 16 GA"   },
   "35.0.1": { ref: "platform-tools-35.0.1", status: "legacy", label: "Android 15"    },
@@ -57,7 +58,7 @@ const versions: Version[] = releases
     };
   });
 
-const latest = versions[0]?.version ?? "36.1.0";
+const latest = versions[0]?.version ?? "37.0.0";
 const repoUrl = `https://github.com/${repo}`;
 const releasesUrl = `${repoUrl}/releases`;
 ---
@@ -148,14 +149,26 @@ const releasesUrl = `${repoUrl}/releases`;
           <code>aapt2</code> and instead pulls its own from Maven
           (<code>com.android.tools.build:aapt2:&lt;agp&gt;:linux</code>),
           which is x86_64-only. The drop-in is still needed by other build
-          steps, but on AGP 9+ also add this to
-          <code>gradle.properties</code> (project- or user-level):
+          steps, but on AGP 9+ also tell Gradle to use the arm64 binary
+          directly. Prefer the user-level Gradle properties file so the
+          machine can build every Android project without committing
+          machine-specific paths:
         </p>
-        <pre class="no-prompt"><code>android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/{latest}/aapt2</code></pre>
+        <pre class="no-prompt"><code>mkdir -p ~/.gradle
+cat &gt;&gt; ~/.gradle/gradle.properties &lt;&lt;'EOF'
+android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/{latest}/aapt2
+EOF</code></pre>
+        <p>
+          Use the full path to the <code>aapt2</code> that this project's
+          installer wrote. For one-project-only overrides, put the same
+          property in that project's <code>gradle.properties</code> instead.
+          Do not put it in <code>local.properties</code>; AGP does not read
+          this override from there.
+        </p>
         <p style="margin-bottom:0">
           Restart the Gradle daemon afterward (<code>./gradlew --stop</code>).
-          AGP 8.x and older don't need this — they still shell out to the SDK's
-          <code>aapt2</code>.
+          AGP 8.x and older don't need this — they still shell out to the
+          SDK's <code>aapt2</code>.
         </p>
       </div>
 
@@ -198,14 +211,15 @@ const releasesUrl = `${repoUrl}/releases`;
         </p>
       )}
 
-      <h3 id="missing">what about 37.0.0 or whatever's newer than the latest above</h3>
+      <h3 id="missing">what if sdkmanager has something newer than the latest release?</h3>
       <p>
         sdkmanager sometimes publishes a build-tools version before AOSP
-        tags the corresponding source publicly. <code>37.0.0</code> is the
-        current example: Google ships the binary but the underlying source
-        hasn't appeared in any public AOSP branch we can build from. When
-        that changes, our daily workflow auto-detects the new tag and a
-        matching arm64 release lands here — no action needed on this end.
+        tags the corresponding source publicly. During that gap the resolver
+        reports <code>no-source</code> and no arm64 release is published yet.
+        <code>37.0.0</code> used to be in that state; it is now mapped to
+        <code>android-17.0.0_r1</code> and available above. When a future
+        source tag appears, the daily workflow auto-detects it and publishes
+        a matching arm64 release here — no action needed on this end.
       </p>
 
       <h2 id="compat">compatibility</h2>

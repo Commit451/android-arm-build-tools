@@ -110,22 +110,24 @@ your distro's libc.
 We ship the versions where AOSP has tagged public source we can
 build from. As of writing:
 
+- `37.0.0` — Android 17 GA, built from `android-17.0.0_r1`
 - `36.1.0` — Android 16 QPR1, built from `android-16.0.0_r3`
 - `36.0.0` — Android 16 GA, built from `android-16.0.0_r1`
 - `35.0.1` — Android 15, built from `platform-tools-35.0.1`
 
 AGP doesn't require build-tools to match `compileSdk`, so any of
-the above paired with e.g. `compileSdk 36` works fine.
+the above paired with e.g. `compileSdk 37` works fine.
 
-### What about 37.0.0 / 36.2.0 / future versions?
+### What about future versions?
 
 sdkmanager sometimes publishes a build-tools version before AOSP
-tags the corresponding source publicly. 37.0.0 is the current
-example: Google ships the binary but the underlying source hasn't
-appeared in any public AOSP branch we can build from. When that
-changes, our daily workflow auto-detects the new tag and publishes
-a matching arm64 build (no action needed on this end). See
-[`DEV.md`](DEV.md) for the resolver design.
+tags the corresponding source publicly. During that gap, the resolver
+marks the version `no-source` and no arm64 release is published yet.
+`37.0.0` used to be in that state; it is now built from
+`android-17.0.0_r1` and available on the Releases tab. When a future
+source tag appears, our daily workflow auto-detects it and publishes a
+matching arm64 build (no action needed on this end). See [`DEV.md`](DEV.md)
+for the resolver design.
 
 ## Releases
 
