@@ -49,16 +49,27 @@ instead pulls its own from Maven
 (`com.android.tools.build:aapt2:<agp-version>:linux`), which is
 x86_64-only. The drop-in above is still needed by other steps,
 but on AGP 9+ you also have to tell Gradle to use the arm64
-binary directly. Add this to your project's `gradle.properties`
-(or `~/.gradle/gradle.properties` to apply globally):
+binary directly.
 
-```properties
+Prefer putting the override in your user-level Gradle properties
+file so every Android project on that ARM64 machine picks it up
+without committing machine-specific paths to an app repository:
+
+```sh
+mkdir -p ~/.gradle
+cat >> ~/.gradle/gradle.properties <<'EOF'
 android.aapt2FromMavenOverride=/home/you/Android/Sdk/build-tools/36.1.0/aapt2
+EOF
 ```
 
 Use the full path to the `aapt2` that this project's installer
-just wrote. Restart the Gradle daemon (`./gradlew --stop`) after
-changing the property so it picks up the new binary.
+just wrote. If you only want the override for one project, you can
+instead add the same property to that project's `gradle.properties`.
+Do not put it in `local.properties`; AGP does not read this override
+from there.
+
+Restart the Gradle daemon (`./gradlew --stop`) after changing the
+property so it picks up the new binary.
 
 If you're on AGP 8.x or older you can skip this step — those
 versions still shell out to `$SDK/build-tools/<v>/aapt2`.
