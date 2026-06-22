@@ -143,8 +143,8 @@ tried in order:
      wins (`_r4` over `_r3` etc.).
 
 If none resolve, the version is `no-source` — sdkmanager has it
-but no buildable AOSP ref exists yet (37.0.0 today). We track it
-in the script output but don't try to build.
+but no buildable AOSP ref exists yet. We track it in the script
+output but don't try to build until a source ref is available.
 
 The workflow's cron path reads the resolver's `next_*` outputs
 (next_tag / next_source / next_sdk) and dispatches a build against
